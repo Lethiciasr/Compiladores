@@ -1,3 +1,6 @@
-
 int x;
-
+float f;
+bool b;
+x = 10;
+f = (float) x + 5.5;
+b = f > 10.0 && x == 10;

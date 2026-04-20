@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_SINTATICA_TAB_H_INCLUDED
-# define YY_YY_SINTATICA_TAB_H_INCLUDED
+#ifndef YY_YY_SIN_TAB_H_INCLUDED
+# define YY_YY_SIN_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -55,11 +55,24 @@ extern int yydebug;
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
     ID = 258,                      /* ID  */
-    NUM = 259,                     /* NUM  */
-    INT = 260,                     /* INT  */
-    FLOAT = 261,                   /* FLOAT  */
-    BOOL = 262,                    /* BOOL  */
-    CHAR = 263                     /* CHAR  */
+    NUM_INT = 259,                 /* NUM_INT  */
+    NUM_FLOAT = 260,               /* NUM_FLOAT  */
+    CHAR_LIT = 261,                /* CHAR_LIT  */
+    BOOL_LIT = 262,                /* BOOL_LIT  */
+    TOKEN_INT = 263,               /* TOKEN_INT  */
+    TOKEN_FLOAT = 264,             /* TOKEN_FLOAT  */
+    TOKEN_CHAR = 265,              /* TOKEN_CHAR  */
+    TOKEN_BOOL = 266,              /* TOKEN_BOOL  */
+    ASSIGN = 267,                  /* ASSIGN  */
+    PLUS = 268,                    /* PLUS  */
+    AND = 269,                     /* AND  */
+    OR = 270,                      /* OR  */
+    EQ = 271,                      /* EQ  */
+    NE = 272,                      /* NE  */
+    LE = 273,                      /* LE  */
+    GE = 274,                      /* GE  */
+    NOT = 275,                     /* NOT  */
+    CAST = 276                     /* CAST  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -68,13 +81,15 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 10 "sintatica.y"
+#line 11 "sin.y"
 
-    int inteiro;
-    float real;
-    char* texto;
+    char* valor_str;
+    struct {
+        char* temp;
+        int tipo_val;
+    } info; 
 
-#line 78 "sintatica.tab.h"
+#line 93 "sin.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -89,4 +104,4 @@ extern YYSTYPE yylval;
 int yyparse (void);
 
 
-#endif /* !YY_YY_SINTATICA_TAB_H_INCLUDED  */
+#endif /* !YY_YY_SIN_TAB_H_INCLUDED  */
