@@ -25,7 +25,7 @@ char buf[200];
 %left OR
 %left AND
 %left EQ NE '<' '>' LE GE
-%left PLUS '-'
+%right PLUS '-'
 %left '*' '/'
 %right NOT
 %right CAST
@@ -37,7 +37,10 @@ char buf[200];
 programa : comandos ;
 comandos : comando comandos | ;
 
-comando : declaracao ';' | atribuicao ';' ;
+comando : declaracao ';' 
+        | atribuicao ';' 
+        | expressao ';' 
+        | expressao ;
 
 declaracao : TOKEN_INT ID    { inserir($2, T_INT); }
            | TOKEN_FLOAT ID  { inserir($2, T_FLOAT); }
