@@ -29,6 +29,7 @@ char buf[200];
 %left '*' '/'
 %right NOT
 %right CAST
+%right UMINUS
 
 %type <info> expressao
 
@@ -77,44 +78,56 @@ expressao : NUM_INT {
                 if(s) { $$.temp = s->temp; $$.tipo_val = s->tipo; }
                 else { yyerror("Var não declarada"); }
             }
-          /* Aritmética */
+          /* --- ADIÇÃO --- */
           | expressao PLUS expressao { 
-                char op1[10], op2[10];
-                strcpy(op1, $1.temp);
-                strcpy(op2, $3.temp);
-
+                char op1[15], op2[15]; strcpy(op1, $1.temp); strcpy(op2, $3.temp);
                 if ($1.tipo_val == T_INT && $3.tipo_val == T_FLOAT) {
-                    char* temp_cast = novo_temp(T_FLOAT);
-                    sprintf(buf, "%s = (float)%s;\n", temp_cast, $1.temp);
-                    strcat(instrucoes, buf);
-                    strcpy(op1, temp_cast); 
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $1.temp); strcat(instrucoes, buf); strcpy(op1, t);
+                } else if ($1.tipo_val == T_FLOAT && $3.tipo_val == T_INT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $3.temp); strcat(instrucoes, buf); strcpy(op2, t);
                 }
-                else if ($1.tipo_val == T_FLOAT && $3.tipo_val == T_INT) {
-                    char* temp_cast = novo_temp(T_FLOAT);
-                    sprintf(buf, "%s = (float)%s;\n", temp_cast, $3.temp);
-                    strcat(instrucoes, buf);
-                    strcpy(op2, temp_cast); 
-                }
+                $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                $$.temp = novo_temp($$.tipo_val); 
+                sprintf(buf, "%s = %s + %s;\n", $$.temp, op1, op2); strcat(instrucoes, buf);
+            }
 
+          /* --- SUBTRAÇÃO --- */
+          | expressao '-' expressao { 
+                char op1[15], op2[15]; strcpy(op1, $1.temp); strcpy(op2, $3.temp);
+                if ($1.tipo_val == T_INT && $3.tipo_val == T_FLOAT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $1.temp); strcat(instrucoes, buf); strcpy(op1, t);
+                } else if ($1.tipo_val == T_FLOAT && $3.tipo_val == T_INT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $3.temp); strcat(instrucoes, buf); strcpy(op2, t);
+                }
                 $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
                 $$.temp = novo_temp($$.tipo_val); 
-                sprintf(buf, "%s = %s + %s;\n", $$.temp, op1, op2); 
-                strcat(instrucoes, buf);
+                sprintf(buf, "%s = %s - %s;\n", $$.temp, op1, op2); strcat(instrucoes, buf);
             }
-          | expressao '-' expressao  { 
+
+          /* --- MULTIPLICAÇÃO --- */
+          | expressao '*' expressao { 
+                char op1[15], op2[15]; strcpy(op1, $1.temp); strcpy(op2, $3.temp);
+                if ($1.tipo_val == T_INT && $3.tipo_val == T_FLOAT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $1.temp); strcat(instrucoes, buf); strcpy(op1, t);
+                } else if ($1.tipo_val == T_FLOAT && $3.tipo_val == T_INT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $3.temp); strcat(instrucoes, buf); strcpy(op2, t);
+                }
                 $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
                 $$.temp = novo_temp($$.tipo_val); 
-                sprintf(buf, "%s = %s - %s;\n", $$.temp, $1.temp, $3.temp); strcat(instrucoes, buf);
+                sprintf(buf, "%s = %s * %s;\n", $$.temp, op1, op2); strcat(instrucoes, buf);
             }
-          | expressao '*' expressao  { 
+
+          /* --- DIVISÃO --- */
+          | expressao '/' expressao { 
+                char op1[15], op2[15]; strcpy(op1, $1.temp); strcpy(op2, $3.temp);
+                if ($1.tipo_val == T_INT && $3.tipo_val == T_FLOAT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $1.temp); strcat(instrucoes, buf); strcpy(op1, t);
+                } else if ($1.tipo_val == T_FLOAT && $3.tipo_val == T_INT) {
+                    char* t = novo_temp(T_FLOAT); sprintf(buf, "%s = (float)%s;\n", t, $3.temp); strcat(instrucoes, buf); strcpy(op2, t);
+                }
                 $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
                 $$.temp = novo_temp($$.tipo_val); 
-                sprintf(buf, "%s = %s * %s;\n", $$.temp, $1.temp, $3.temp); strcat(instrucoes, buf);
-            }
-          | expressao '/' expressao  { 
-                $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                $$.temp = novo_temp($$.tipo_val); 
-                sprintf(buf, "%s = %s / %s;\n", $$.temp, $1.temp, $3.temp); strcat(instrucoes, buf);
+                sprintf(buf, "%s = %s / %s;\n", $$.temp, op1, op2); strcat(instrucoes, buf);
             }
           /* Relacionais */
           | expressao EQ expressao  { $$.tipo_val = T_BOOL; $$.temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s == %s;\n", $$.temp, $1.temp, $3.temp); strcat(instrucoes, buf); }
@@ -136,6 +149,12 @@ expressao : NUM_INT {
                 sprintf(buf, "%s = (float)%s;\n", $$.temp, $4.temp); strcat(instrucoes, buf);
             }
           | '(' expressao ')' { $$ = $2; }
+          | '-' expressao %prec UMINUS { 
+                $$.tipo_val = $2.tipo_val; 
+                $$.temp = novo_temp($$.tipo_val); 
+                sprintf(buf, "%s = -%s;\n", $$.temp, $2.temp); 
+                strcat(instrucoes, buf); 
+            }
           ;
 
 %%

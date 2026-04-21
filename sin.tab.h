@@ -72,7 +72,8 @@ extern int yydebug;
     LE = 273,                      /* LE  */
     GE = 274,                      /* GE  */
     NOT = 275,                     /* NOT  */
-    CAST = 276                     /* CAST  */
+    CAST = 276,                    /* CAST  */
+    UMINUS = 277                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -89,7 +90,7 @@ union YYSTYPE
         int tipo_val;
     } info; 
 
-#line 93 "sin.tab.h"
+#line 94 "sin.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
