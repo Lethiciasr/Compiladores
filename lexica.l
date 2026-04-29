@@ -1,7 +1,7 @@
 %{
 #include <string.h>
 #include <stdlib.h>
-#include "sin.tab.h" /* Certifique-se que o nome do arquivo .h gerado pelo Bison é este */
+#include "sin.tab.h" 
 %}
 
 %option noyywrap
@@ -12,8 +12,8 @@
 "float"     { return TOKEN_FLOAT; }
 "char"      { return TOKEN_CHAR; }
 "bool"      { return TOKEN_BOOL; }
-"true"      { yylval.valor_str = strdup("1"); return BOOL_LIT; }
-"false"     { yylval.valor_str = strdup("0"); return BOOL_LIT; }
+"true"      { yylval.valor_str = strdup("true"); return BOOL_LIT; }
+"false"     { yylval.valor_str = strdup("false"); return BOOL_LIT; }
 
 "&&"        { return AND; }
 "||"        { return OR; }
