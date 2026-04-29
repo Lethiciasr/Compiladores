@@ -483,7 +483,7 @@ char *yytext;
 #line 2 "lexica.l"
 #include <string.h>
 #include <stdlib.h>
-#include "sin.tab.h" /* Certifique-se que o nome do arquivo .h gerado pelo Bison é este */
+#include "sin.tab.h" 
 #line 487 "lex.yy.c"
 #line 488 "lex.yy.c"
 
@@ -785,12 +785,12 @@ YY_RULE_SETUP
 case 5:
 YY_RULE_SETUP
 #line 15 "lexica.l"
-{ yylval.valor_str = strdup("1"); return BOOL_LIT; }
+{ yylval.valor_str = strdup("true"); return BOOL_LIT; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
 #line 16 "lexica.l"
-{ yylval.valor_str = strdup("0"); return BOOL_LIT; }
+{ yylval.valor_str = strdup("false"); return BOOL_LIT; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP

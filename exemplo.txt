@@ -1,4 +1,9 @@
-bool B1;
-bool B2;
-bool R;
-R = B1 && !B2;
+int a;
+float b;
+char c;
+bool d;
+
+a = 10;
+b = 3.14;
+c = 'x';
+d = true;

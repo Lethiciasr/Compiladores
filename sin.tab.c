@@ -1584,6 +1584,9 @@ int main() {
     yyparse();
 
     printf("Codigo Intermediario:\n");
+    printf("#define true 1\n");
+    printf("#define false 0\n");
+    printf("\n");
     printf("%s", declaracoes);  
     printf("\n");               
     printf("%s", instrucoes);   
