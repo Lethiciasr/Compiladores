@@ -1,9 +1,4 @@
-int a;
-float b;
-char c;
-bool d;
+int goleiro_neto;
+float goleiro_neto; /* ERRO: A variável já existe! */
 
-a = 10;
-b = 3.14;
-c = 'x';
-d = true;
+goleiro_neto = 1;

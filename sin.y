@@ -50,7 +50,7 @@ declaracao : TOKEN_INT ID    { inserir($2, T_INT); }
 
 atribuicao : ID ASSIGN expressao {
     Simbolo *s = buscar($1);
-    if (!s) printf("Erro: Variável %s não declarada.\n", $1);
+    if (!s) printf("Erro: Variavel %s nao declarada.\n", $1);
     else {
         sprintf(buf, "%s = %s; // Atribuicao para %s\n", s->temp, $3.temp, $1);
         strcat(instrucoes, buf);
@@ -75,9 +75,16 @@ expressao : NUM_INT {
             }
           | ID {
                 Simbolo *s = buscar($1);
-                if(s) { $$.temp = s->temp; $$.tipo_val = s->tipo; }
-                else { yyerror("Var não declarada"); }
-            }
+                if(s) { 
+                    $$.temp = s->temp; 
+                    $$.tipo_val = s->tipo; 
+                    }
+                else { 
+                    yyerror("Var nao declarada"); 
+                    $$.temp = "ERRO"; 
+                    $$.tipo_val = T_INT; 
+                    }
+                }
           /* --- ADIÇÃO --- */
           | expressao PLUS expressao { 
                 char op1[15], op2[15]; strcpy(op1, $1.temp); strcpy(op2, $3.temp);
@@ -163,9 +170,6 @@ int main() {
     yyparse();
 
     printf("Codigo Intermediario:\n");
-    printf("#define true 1\n");
-    printf("#define false 0\n");
-    printf("\n");
     printf("%s", declaracoes);  
     printf("\n");               
     printf("%s", instrucoes);   

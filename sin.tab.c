@@ -533,9 +533,9 @@ static const yytype_int8 yytranslate[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    38,    38,    39,    39,    41,    42,    43,    44,    46,
-      47,    48,    49,    51,    60,    64,    68,    72,    76,    82,
-      95,   108,   121,   133,   134,   135,   136,   137,   138,   140,
-     141,   142,   143,   147,   151,   152
+      47,    48,    49,    51,    60,    64,    68,    72,    76,    89,
+     102,   115,   128,   140,   141,   142,   143,   144,   145,   147,
+     148,   149,   150,   154,   158,   159
 };
 #endif
 
@@ -1175,7 +1175,7 @@ yyreduce:
 #line 51 "sin.y"
                                  {
     Simbolo *s = buscar((yyvsp[-2].valor_str));
-    if (!s) printf("Erro: Variável %s não declarada.\n", (yyvsp[-2].valor_str));
+    if (!s) printf("Erro: Variavel %s nao declarada.\n", (yyvsp[-2].valor_str));
     else {
         sprintf(buf, "%s = %s; // Atribuicao para %s\n", s->temp, (yyvsp[0].info).temp, (yyvsp[-2].valor_str));
         strcat(instrucoes, buf);
@@ -1224,14 +1224,21 @@ yyreduce:
 #line 76 "sin.y"
                {
                 Simbolo *s = buscar((yyvsp[0].valor_str));
-                if(s) { (yyval.info).temp = s->temp; (yyval.info).tipo_val = s->tipo; }
-                else { yyerror("Var não declarada"); }
-            }
-#line 1231 "sin.tab.c"
+                if(s) { 
+                    (yyval.info).temp = s->temp; 
+                    (yyval.info).tipo_val = s->tipo; 
+                    }
+                else { 
+                    yyerror("Var nao declarada"); 
+                    (yyval.info).temp = "ERRO"; 
+                    (yyval.info).tipo_val = T_INT; 
+                    }
+                }
+#line 1238 "sin.tab.c"
     break;
 
   case 19: /* expressao: expressao PLUS expressao  */
-#line 82 "sin.y"
+#line 89 "sin.y"
                                      { 
                 char op1[15], op2[15]; strcpy(op1, (yyvsp[-2].info).temp); strcpy(op2, (yyvsp[0].info).temp);
                 if ((yyvsp[-2].info).tipo_val == T_INT && (yyvsp[0].info).tipo_val == T_FLOAT) {
@@ -1243,11 +1250,11 @@ yyreduce:
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
                 sprintf(buf, "%s = %s + %s;\n", (yyval.info).temp, op1, op2); strcat(instrucoes, buf);
             }
-#line 1247 "sin.tab.c"
+#line 1254 "sin.tab.c"
     break;
 
   case 20: /* expressao: expressao '-' expressao  */
-#line 95 "sin.y"
+#line 102 "sin.y"
                                     { 
                 char op1[15], op2[15]; strcpy(op1, (yyvsp[-2].info).temp); strcpy(op2, (yyvsp[0].info).temp);
                 if ((yyvsp[-2].info).tipo_val == T_INT && (yyvsp[0].info).tipo_val == T_FLOAT) {
@@ -1259,11 +1266,11 @@ yyreduce:
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
                 sprintf(buf, "%s = %s - %s;\n", (yyval.info).temp, op1, op2); strcat(instrucoes, buf);
             }
-#line 1263 "sin.tab.c"
+#line 1270 "sin.tab.c"
     break;
 
   case 21: /* expressao: expressao '*' expressao  */
-#line 108 "sin.y"
+#line 115 "sin.y"
                                     { 
                 char op1[15], op2[15]; strcpy(op1, (yyvsp[-2].info).temp); strcpy(op2, (yyvsp[0].info).temp);
                 if ((yyvsp[-2].info).tipo_val == T_INT && (yyvsp[0].info).tipo_val == T_FLOAT) {
@@ -1275,11 +1282,11 @@ yyreduce:
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
                 sprintf(buf, "%s = %s * %s;\n", (yyval.info).temp, op1, op2); strcat(instrucoes, buf);
             }
-#line 1279 "sin.tab.c"
+#line 1286 "sin.tab.c"
     break;
 
   case 22: /* expressao: expressao '/' expressao  */
-#line 121 "sin.y"
+#line 128 "sin.y"
                                     { 
                 char op1[15], op2[15]; strcpy(op1, (yyvsp[-2].info).temp); strcpy(op2, (yyvsp[0].info).temp);
                 if ((yyvsp[-2].info).tipo_val == T_INT && (yyvsp[0].info).tipo_val == T_FLOAT) {
@@ -1291,100 +1298,100 @@ yyreduce:
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
                 sprintf(buf, "%s = %s / %s;\n", (yyval.info).temp, op1, op2); strcat(instrucoes, buf);
             }
-#line 1295 "sin.tab.c"
+#line 1302 "sin.tab.c"
     break;
 
   case 23: /* expressao: expressao EQ expressao  */
-#line 133 "sin.y"
+#line 140 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s == %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1301 "sin.tab.c"
+#line 1308 "sin.tab.c"
     break;
 
   case 24: /* expressao: expressao NE expressao  */
-#line 134 "sin.y"
+#line 141 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s != %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1307 "sin.tab.c"
+#line 1314 "sin.tab.c"
     break;
 
   case 25: /* expressao: expressao '>' expressao  */
-#line 135 "sin.y"
+#line 142 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s > %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1313 "sin.tab.c"
+#line 1320 "sin.tab.c"
     break;
 
   case 26: /* expressao: expressao '<' expressao  */
-#line 136 "sin.y"
+#line 143 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s < %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1319 "sin.tab.c"
+#line 1326 "sin.tab.c"
     break;
 
   case 27: /* expressao: expressao GE expressao  */
-#line 137 "sin.y"
+#line 144 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s >= %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1325 "sin.tab.c"
+#line 1332 "sin.tab.c"
     break;
 
   case 28: /* expressao: expressao LE expressao  */
-#line 138 "sin.y"
+#line 145 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s <= %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1331 "sin.tab.c"
+#line 1338 "sin.tab.c"
     break;
 
   case 29: /* expressao: expressao AND expressao  */
-#line 140 "sin.y"
+#line 147 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s && %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1337 "sin.tab.c"
+#line 1344 "sin.tab.c"
     break;
 
   case 30: /* expressao: expressao OR expressao  */
-#line 141 "sin.y"
+#line 148 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s || %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1343 "sin.tab.c"
+#line 1350 "sin.tab.c"
     break;
 
   case 31: /* expressao: NOT expressao  */
-#line 142 "sin.y"
+#line 149 "sin.y"
                                     { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = !%s;\n", (yyval.info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1349 "sin.tab.c"
+#line 1356 "sin.tab.c"
     break;
 
   case 32: /* expressao: '(' TOKEN_INT ')' expressao  */
-#line 143 "sin.y"
+#line 150 "sin.y"
                                                    { 
                 (yyval.info).tipo_val = T_INT; (yyval.info).temp = novo_temp(T_INT); 
                 sprintf(buf, "%s = (int)%s;\n", (yyval.info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf);
             }
-#line 1358 "sin.tab.c"
+#line 1365 "sin.tab.c"
     break;
 
   case 33: /* expressao: '(' TOKEN_FLOAT ')' expressao  */
-#line 147 "sin.y"
+#line 154 "sin.y"
                                                      { 
                 (yyval.info).tipo_val = T_FLOAT; (yyval.info).temp = novo_temp(T_FLOAT); 
                 sprintf(buf, "%s = (float)%s;\n", (yyval.info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf);
             }
-#line 1367 "sin.tab.c"
+#line 1374 "sin.tab.c"
     break;
 
   case 34: /* expressao: '(' expressao ')'  */
-#line 151 "sin.y"
+#line 158 "sin.y"
                               { (yyval.info) = (yyvsp[-1].info); }
-#line 1373 "sin.tab.c"
+#line 1380 "sin.tab.c"
     break;
 
   case 35: /* expressao: '-' expressao  */
-#line 152 "sin.y"
+#line 159 "sin.y"
                                        { 
                 (yyval.info).tipo_val = (yyvsp[0].info).tipo_val; 
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
                 sprintf(buf, "%s = -%s;\n", (yyval.info).temp, (yyvsp[0].info).temp); 
                 strcat(instrucoes, buf); 
             }
-#line 1384 "sin.tab.c"
+#line 1391 "sin.tab.c"
     break;
 
 
-#line 1388 "sin.tab.c"
+#line 1395 "sin.tab.c"
 
       default: break;
     }
@@ -1577,7 +1584,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 160 "sin.y"
+#line 167 "sin.y"
 
 
 int main() {
