@@ -22,6 +22,7 @@ char* gerar_cast(char* temp_origem, Tipo tipo_destino);
 // Buffers para armazenar o código intermediário gerado
 extern char declaracoes[5000];
 extern char instrucoes[5000];
-
+extern char c_code_decl[5000];
+extern char c_code_body[5000];
 
 #endif

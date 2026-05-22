@@ -8,6 +8,10 @@ int t_cont = 1;
 
 char declaracoes[5000] = "";
 char instrucoes[5000] = "";
+// Novo buffer global (junto com declaracoes e instrucoes)
+char c_code_decl[5000] = "";   // declarações C (int x; float y; …)
+char c_code_body[5000] = "";   // corpo C (atribuições, operações…)
+
 
 // Insere um novo símbolo na tabela (lista encadeada)
 char* novo_temp(Tipo tipo) {
@@ -22,7 +26,7 @@ char* novo_temp(Tipo tipo) {
         case T_BOOL:  sprintf(linha, "int %s; //mapeamento bool_int\n", t); break;
     }
     strcat(declaracoes, linha); 
-    
+    strcat(c_code_decl, linha);   // replica declaração no buffer C
     return t;
 }
 

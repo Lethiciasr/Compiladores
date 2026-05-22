@@ -78,8 +78,10 @@ extern int yylex();
 void yyerror(const char *s) { printf("Erro: %s\n", s); }
 
 char buf[200];
+char c_decl[5000] = "";
+char c_body[5000] = "";
 
-#line 83 "sin.tab.c"
+#line 85 "sin.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -530,12 +532,12 @@ static const yytype_int8 yytranslate[] =
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,    38,    38,    40,    40,    42,    43,    44,    46,    47,
-      48,    49,    51,    78,    84,    90,    96,   102,   115,   129,
-     143,   157,   173,   174,   175,   176,   177,   178,   181,   190,
-     199,   210,   220,   230,   233
+       0,    41,    41,    43,    43,    45,    46,    47,    49,    54,
+      59,    64,    71,   107,   114,   121,   128,   135,   149,   175,
+     201,   227,   254,   263,   272,   281,   290,   299,   309,   322,
+     335,   349,   361,   373,   377
 };
 #endif
 
@@ -1148,323 +1150,471 @@ yyreduce:
   switch (yyn)
     {
   case 8: /* declaracao: TOKEN_INT ID  */
-#line 46 "sin.y"
-                             { inserir((yyvsp[0].valor_str), T_INT); }
-#line 1154 "sin.tab.c"
-    break;
-
-  case 9: /* declaracao: TOKEN_FLOAT ID  */
-#line 47 "sin.y"
-                             { inserir((yyvsp[0].valor_str), T_FLOAT); }
+#line 49 "sin.y"
+                            {
+                inserir((yyvsp[0].valor_str), T_INT);
+                sprintf(buf, "int %s;\n", (yyvsp[0].valor_str));
+                strcat(c_decl, buf);
+             }
 #line 1160 "sin.tab.c"
     break;
 
+  case 9: /* declaracao: TOKEN_FLOAT ID  */
+#line 54 "sin.y"
+                            {
+                inserir((yyvsp[0].valor_str), T_FLOAT);
+                sprintf(buf, "float %s;\n", (yyvsp[0].valor_str));
+                strcat(c_decl, buf);
+             }
+#line 1170 "sin.tab.c"
+    break;
+
   case 10: /* declaracao: TOKEN_CHAR ID  */
-#line 48 "sin.y"
-                             { inserir((yyvsp[0].valor_str), T_CHAR); }
-#line 1166 "sin.tab.c"
+#line 59 "sin.y"
+                            {
+                inserir((yyvsp[0].valor_str), T_CHAR);
+                sprintf(buf, "char %s;\n", (yyvsp[0].valor_str));
+                strcat(c_decl, buf);
+             }
+#line 1180 "sin.tab.c"
     break;
 
   case 11: /* declaracao: TOKEN_BOOL ID  */
-#line 49 "sin.y"
-                             { inserir((yyvsp[0].valor_str), T_BOOL); }
-#line 1172 "sin.tab.c"
+#line 64 "sin.y"
+                            {
+                inserir((yyvsp[0].valor_str), T_BOOL);
+                sprintf(buf, "int %s;\n", (yyvsp[0].valor_str));
+                strcat(c_decl, buf);
+             }
+#line 1190 "sin.tab.c"
     break;
 
   case 12: /* atribuicao: ID ASSIGN expressao  */
-#line 51 "sin.y"
+#line 71 "sin.y"
                                  {
-    Simbolo *s = buscar((yyvsp[-2].valor_str)); 
+    Simbolo *s = buscar((yyvsp[-2].valor_str));
     if (!s) {
         char erro_msg[100];
-        sprintf(erro_msg, "Erro: Variável '%s' não declarada.", (yyvsp[-2].valor_str));
+        sprintf(erro_msg, "Erro: Variavel '%s' nao declarada.", (yyvsp[-2].valor_str));
         yyerror(erro_msg);
     } else {
-        char* valor_final = (yyvsp[0].info).temp;
+        char* valor_final  = (yyvsp[0].info).temp;
+        char* c_expr_final = (yyvsp[0].info).c_expr;
         int sem_erro = 1;
-        
-        // Conversão Implícita na Atribuição (Coerção)
+
         if (s->tipo == T_FLOAT && (yyvsp[0].info).tipo_val == T_INT) {
-            valor_final = gerar_cast((yyvsp[0].info).temp, T_FLOAT); 
+            valor_final = gerar_cast((yyvsp[0].info).temp, T_FLOAT);
+            char *tmp = (char*) malloc(strlen(c_expr_final) + 16);
+            sprintf(tmp, "(float)(%s)", c_expr_final);
+            c_expr_final = tmp;
         } else if (s->tipo == T_INT && (yyvsp[0].info).tipo_val == T_FLOAT) {
             valor_final = gerar_cast((yyvsp[0].info).temp, T_INT);
+            char *tmp = (char*) malloc(strlen(c_expr_final) + 16);
+            sprintf(tmp, "(int)(%s)", c_expr_final);
+            c_expr_final = tmp;
         } else if (s->tipo != (yyvsp[0].info).tipo_val) {
             yyerror("Erro Semantico: Atribuicao com tipos incompativeis.");
             sem_erro = 0;
         }
-        
+
         if (sem_erro) {
             sprintf(buf, "%s = %s;\n", s->temp, valor_final);
-            strcat(instrucoes, buf); 
+            strcat(instrucoes, buf);
+
+            sprintf(buf, "%s = %s;\n", s->nome, c_expr_final);
+            strcat(c_body, buf);
         }
     }
 }
-#line 1203 "sin.tab.c"
+#line 1230 "sin.tab.c"
     break;
 
   case 13: /* expressao: NUM_INT  */
-#line 78 "sin.y"
-                    { 
-                (yyval.info).tipo_val = T_INT; 
-                (yyval.info).temp = novo_temp(T_INT); 
-                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str)); 
-                strcat(instrucoes, buf); 
+#line 107 "sin.y"
+                    {
+                (yyval.info).tipo_val = T_INT;
+                (yyval.info).temp   = novo_temp(T_INT);
+                (yyval.info).c_expr = strdup((yyvsp[0].valor_str));
+                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
+                strcat(instrucoes, buf);
             }
-#line 1214 "sin.tab.c"
+#line 1242 "sin.tab.c"
     break;
 
   case 14: /* expressao: NUM_FLOAT  */
-#line 84 "sin.y"
-                      { 
-                (yyval.info).tipo_val = T_FLOAT; 
-                (yyval.info).temp = novo_temp(T_FLOAT); 
-                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str)); 
-                strcat(instrucoes, buf); 
+#line 114 "sin.y"
+                      {
+                (yyval.info).tipo_val = T_FLOAT;
+                (yyval.info).temp   = novo_temp(T_FLOAT);
+                (yyval.info).c_expr = strdup((yyvsp[0].valor_str));
+                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
+                strcat(instrucoes, buf);
             }
-#line 1225 "sin.tab.c"
+#line 1254 "sin.tab.c"
     break;
 
   case 15: /* expressao: CHAR_LIT  */
-#line 90 "sin.y"
-                     { 
-                (yyval.info).tipo_val = T_CHAR; 
-                (yyval.info).temp = novo_temp(T_CHAR); 
-                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str)); 
+#line 121 "sin.y"
+                     {
+                (yyval.info).tipo_val = T_CHAR;
+                (yyval.info).temp   = novo_temp(T_CHAR);
+                (yyval.info).c_expr = strdup((yyvsp[0].valor_str));
+                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1236 "sin.tab.c"
+#line 1266 "sin.tab.c"
     break;
 
   case 16: /* expressao: BOOL_LIT  */
-#line 96 "sin.y"
-                     { 
-                (yyval.info).tipo_val = T_BOOL; 
-                (yyval.info).temp = novo_temp(T_BOOL); 
-                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str)); 
+#line 128 "sin.y"
+                     {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp   = novo_temp(T_BOOL);
+                (yyval.info).c_expr = strdup((yyvsp[0].valor_str));
+                sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1247 "sin.tab.c"
+#line 1278 "sin.tab.c"
     break;
 
   case 17: /* expressao: ID  */
-#line 102 "sin.y"
-               { 
-                Simbolo *s = buscar((yyvsp[0].valor_str)); 
-                if(s) { 
-                    (yyval.info).tipo_val = s->tipo; 
-                    (yyval.info).temp = s->temp; 
-                } else { 
+#line 135 "sin.y"
+               {
+                Simbolo *s = buscar((yyvsp[0].valor_str));
+                if (s) {
+                    (yyval.info).tipo_val = s->tipo;
+                    (yyval.info).temp   = s->temp;
+                    (yyval.info).c_expr = strdup(s->nome);
+                } else {
                     yyerror("Var nao declarada");
-                    (yyval.info).temp = "ERRO"; 
+                    (yyval.info).temp   = "ERRO";
+                    (yyval.info).c_expr = strdup("ERRO");
                     (yyval.info).tipo_val = T_INT;
-                } 
+                }
             }
-#line 1263 "sin.tab.c"
+#line 1296 "sin.tab.c"
     break;
 
   case 18: /* expressao: expressao PLUS expressao  */
-#line 115 "sin.y"
-                                     { 
-                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) || ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
+#line 149 "sin.y"
+                                     {
+                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
+                    ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de soma com tipos invalidos.");
                 } else {
+                    char *ce1 = (yyvsp[-2].info).c_expr, *ce3 = (yyvsp[0].info).c_expr;
                     if ((yyvsp[-2].info).tipo_val != (yyvsp[0].info).tipo_val) {
-                        if ((yyvsp[-2].info).tipo_val == T_INT) { (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT; }
-                        else { (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT; }
+                        if ((yyvsp[-2].info).tipo_val == T_INT) {
+                            (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
+                        } else {
+                            (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
+                        }
                     }
                     (yyval.info).tipo_val = ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                    (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
-                    sprintf(buf, "%s = %s + %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); 
+                    (yyval.info).temp = novo_temp((yyval.info).tipo_val);
+                    sprintf(buf, "%s = %s + %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
                     strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    sprintf(ce, "(%s + %s)", ce1, ce3);
+                    (yyval.info).c_expr = ce;
                 }
             }
-#line 1282 "sin.tab.c"
+#line 1327 "sin.tab.c"
     break;
 
   case 19: /* expressao: expressao '-' expressao  */
-#line 129 "sin.y"
-                                    { 
-                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) || ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
+#line 175 "sin.y"
+                                    {
+                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
+                    ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de subtracao com tipos invalidos.");
                 } else {
+                    char *ce1 = (yyvsp[-2].info).c_expr, *ce3 = (yyvsp[0].info).c_expr;
                     if ((yyvsp[-2].info).tipo_val != (yyvsp[0].info).tipo_val) {
-                        if ((yyvsp[-2].info).tipo_val == T_INT) { (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT; }
-                        else { (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT; }
+                        if ((yyvsp[-2].info).tipo_val == T_INT) {
+                            (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
+                        } else {
+                            (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
+                        }
                     }
                     (yyval.info).tipo_val = ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                    (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
-                    sprintf(buf, "%s = %s - %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); 
-                    strcat(instrucoes, buf); 
+                    (yyval.info).temp = novo_temp((yyval.info).tipo_val);
+                    sprintf(buf, "%s = %s - %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                    strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    sprintf(ce, "(%s - %s)", ce1, ce3);
+                    (yyval.info).c_expr = ce;
                 }
             }
-#line 1301 "sin.tab.c"
+#line 1358 "sin.tab.c"
     break;
 
   case 20: /* expressao: expressao '*' expressao  */
-#line 143 "sin.y"
-                                    { 
-                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) || ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
+#line 201 "sin.y"
+                                    {
+                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
+                    ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de multiplicacao com tipos invalidos.");
                 } else {
+                    char *ce1 = (yyvsp[-2].info).c_expr, *ce3 = (yyvsp[0].info).c_expr;
                     if ((yyvsp[-2].info).tipo_val != (yyvsp[0].info).tipo_val) {
-                        if ((yyvsp[-2].info).tipo_val == T_INT) { (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT; }
-                        else { (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT; }
+                        if ((yyvsp[-2].info).tipo_val == T_INT) {
+                            (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
+                        } else {
+                            (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
+                        }
                     }
                     (yyval.info).tipo_val = ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                    (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
-                    sprintf(buf, "%s = %s * %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); 
-                    strcat(instrucoes, buf); 
-                }
-            }
-#line 1320 "sin.tab.c"
-    break;
-
-  case 21: /* expressao: expressao '/' expressao  */
-#line 157 "sin.y"
-                                    { 
-                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) || ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
-                    yyerror("Erro Semantico: Operacao de divisao com tipos invalidos.");
-                } else {
-                    if ((yyvsp[-2].info).tipo_val != (yyvsp[0].info).tipo_val) {
-                        if ((yyvsp[-2].info).tipo_val == T_INT) { (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT; }
-                        else { (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT; }
-                    }
-                    (yyval.info).tipo_val = ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                    (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
-                    sprintf(buf, "%s = %s / %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); 
-                    strcat(instrucoes, buf); 
-                }
-            }
-#line 1339 "sin.tab.c"
-    break;
-
-  case 22: /* expressao: expressao EQ expressao  */
-#line 173 "sin.y"
-                                    { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s == %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1345 "sin.tab.c"
-    break;
-
-  case 23: /* expressao: expressao NE expressao  */
-#line 174 "sin.y"
-                                    { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s != %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1351 "sin.tab.c"
-    break;
-
-  case 24: /* expressao: expressao '>' expressao  */
-#line 175 "sin.y"
-                                    { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s > %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1357 "sin.tab.c"
-    break;
-
-  case 25: /* expressao: expressao '<' expressao  */
-#line 176 "sin.y"
-                                    { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s < %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1363 "sin.tab.c"
-    break;
-
-  case 26: /* expressao: expressao GE expressao  */
-#line 177 "sin.y"
-                                    { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s >= %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1369 "sin.tab.c"
-    break;
-
-  case 27: /* expressao: expressao LE expressao  */
-#line 178 "sin.y"
-                                    { (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); sprintf(buf, "%s = %s <= %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); strcat(instrucoes, buf); }
-#line 1375 "sin.tab.c"
-    break;
-
-  case 28: /* expressao: expressao AND expressao  */
-#line 181 "sin.y"
-                                    { 
-                if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
-                    yyerror("Erro Semantico: Operador AND requer operandos booleanos.");
-                } else {
-                    (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); 
-                    sprintf(buf, "%s = %s && %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); 
-                    strcat(instrucoes, buf); 
+                    (yyval.info).temp = novo_temp((yyval.info).tipo_val);
+                    sprintf(buf, "%s = %s * %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                    strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    sprintf(ce, "(%s * %s)", ce1, ce3);
+                    (yyval.info).c_expr = ce;
                 }
             }
 #line 1389 "sin.tab.c"
     break;
 
+  case 21: /* expressao: expressao '/' expressao  */
+#line 227 "sin.y"
+                                    {
+                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
+                    ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
+                    yyerror("Erro Semantico: Operacao de divisao com tipos invalidos.");
+                } else {
+                    char *ce1 = (yyvsp[-2].info).c_expr, *ce3 = (yyvsp[0].info).c_expr;
+                    if ((yyvsp[-2].info).tipo_val != (yyvsp[0].info).tipo_val) {
+                        if ((yyvsp[-2].info).tipo_val == T_INT) {
+                            (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT); (yyvsp[-2].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
+                        } else {
+                            (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT); (yyvsp[0].info).tipo_val = T_FLOAT;
+                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
+                        }
+                    }
+                    (yyval.info).tipo_val = ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                    (yyval.info).temp = novo_temp((yyval.info).tipo_val);
+                    sprintf(buf, "%s = %s / %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                    strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    sprintf(ce, "(%s / %s)", ce1, ce3);
+                    (yyval.info).c_expr = ce;
+                }
+            }
+#line 1420 "sin.tab.c"
+    break;
+
+  case 22: /* expressao: expressao EQ expressao  */
+#line 254 "sin.y"
+                                   {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp = novo_temp(T_BOOL);
+                sprintf(buf, "%s = %s == %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                sprintf(ce, "(%s == %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
+            }
+#line 1434 "sin.tab.c"
+    break;
+
+  case 23: /* expressao: expressao NE expressao  */
+#line 263 "sin.y"
+                                   {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp = novo_temp(T_BOOL);
+                sprintf(buf, "%s = %s != %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                sprintf(ce, "(%s != %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
+            }
+#line 1448 "sin.tab.c"
+    break;
+
+  case 24: /* expressao: expressao '>' expressao  */
+#line 272 "sin.y"
+                                    {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp = novo_temp(T_BOOL);
+                sprintf(buf, "%s = %s > %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                sprintf(ce, "(%s > %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
+            }
+#line 1462 "sin.tab.c"
+    break;
+
+  case 25: /* expressao: expressao '<' expressao  */
+#line 281 "sin.y"
+                                    {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp = novo_temp(T_BOOL);
+                sprintf(buf, "%s = %s < %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                sprintf(ce, "(%s < %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
+            }
+#line 1476 "sin.tab.c"
+    break;
+
+  case 26: /* expressao: expressao GE expressao  */
+#line 290 "sin.y"
+                                   {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp = novo_temp(T_BOOL);
+                sprintf(buf, "%s = %s >= %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                sprintf(ce, "(%s >= %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
+            }
+#line 1490 "sin.tab.c"
+    break;
+
+  case 27: /* expressao: expressao LE expressao  */
+#line 299 "sin.y"
+                                   {
+                (yyval.info).tipo_val = T_BOOL;
+                (yyval.info).temp = novo_temp(T_BOOL);
+                sprintf(buf, "%s = %s <= %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                sprintf(ce, "(%s <= %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
+            }
+#line 1504 "sin.tab.c"
+    break;
+
+  case 28: /* expressao: expressao AND expressao  */
+#line 309 "sin.y"
+                                    {
+                if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
+                    yyerror("Erro Semantico: Operador AND requer operandos booleanos.");
+                } else {
+                    (yyval.info).tipo_val = T_BOOL;
+                    (yyval.info).temp = novo_temp(T_BOOL);
+                    sprintf(buf, "%s = %s && %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                    strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                    sprintf(ce, "(%s && %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                    (yyval.info).c_expr = ce;
+                }
+            }
+#line 1522 "sin.tab.c"
+    break;
+
   case 29: /* expressao: expressao OR expressao  */
-#line 190 "sin.y"
-                                    { 
+#line 322 "sin.y"
+                                   {
                 if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador OR requer operandos booleanos.");
                 } else {
-                    (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); 
-                    sprintf(buf, "%s = %s || %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp); 
-                    strcat(instrucoes, buf); 
+                    (yyval.info).tipo_val = T_BOOL;
+                    (yyval.info).temp = novo_temp(T_BOOL);
+                    sprintf(buf, "%s = %s || %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                    strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen((yyvsp[-2].info).c_expr) + strlen((yyvsp[0].info).c_expr) + 8);
+                    sprintf(ce, "(%s || %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
+                    (yyval.info).c_expr = ce;
                 }
             }
-#line 1403 "sin.tab.c"
+#line 1540 "sin.tab.c"
     break;
 
   case 30: /* expressao: NOT expressao  */
-#line 199 "sin.y"
-                                    { 
+#line 335 "sin.y"
+                          {
                 if ((yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador NOT requer operando booleano.");
                 } else {
-                    (yyval.info).tipo_val = T_BOOL; (yyval.info).temp = novo_temp(T_BOOL); 
-                    sprintf(buf, "%s = !%s;\n", (yyval.info).temp, (yyvsp[0].info).temp); 
-                    strcat(instrucoes, buf); 
+                    (yyval.info).tipo_val = T_BOOL;
+                    (yyval.info).temp = novo_temp(T_BOOL);
+                    sprintf(buf, "%s = !%s;\n", (yyval.info).temp, (yyvsp[0].info).temp);
+                    strcat(instrucoes, buf);
+                    char *ce = (char*) malloc(strlen((yyvsp[0].info).c_expr) + 4);
+                    sprintf(ce, "(!%s)", (yyvsp[0].info).c_expr);
+                    (yyval.info).c_expr = ce;
                 }
             }
-#line 1417 "sin.tab.c"
+#line 1558 "sin.tab.c"
     break;
 
   case 31: /* expressao: '(' TOKEN_INT ')' expressao  */
-#line 210 "sin.y"
-                                                   { 
+#line 349 "sin.y"
+                                                   {
                 char* temp_copia = novo_temp((yyvsp[0].info).tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, (yyvsp[0].info).temp);
                 strcat(instrucoes, buf);
-
-                (yyval.info).tipo_val = T_INT;   
+                (yyval.info).tipo_val = T_INT;
                 (yyval.info).temp = novo_temp(T_INT);
                 sprintf(buf, "%s = (int) %s;\n", (yyval.info).temp, temp_copia);
                 strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[0].info).c_expr) + 16);
+                sprintf(ce, "(int)(%s)", (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
             }
-#line 1432 "sin.tab.c"
+#line 1575 "sin.tab.c"
     break;
 
   case 32: /* expressao: '(' TOKEN_FLOAT ')' expressao  */
-#line 220 "sin.y"
-                                                     { 
+#line 361 "sin.y"
+                                                     {
                 char* temp_copia = novo_temp((yyvsp[0].info).tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, (yyvsp[0].info).temp);
                 strcat(instrucoes, buf);
-
-                (yyval.info).tipo_val = T_FLOAT; 
+                (yyval.info).tipo_val = T_FLOAT;
                 (yyval.info).temp = novo_temp(T_FLOAT);
                 sprintf(buf, "%s = (float) %s;\n", (yyval.info).temp, temp_copia);
                 strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[0].info).c_expr) + 16);
+                sprintf(ce, "(float)(%s)", (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
             }
-#line 1447 "sin.tab.c"
+#line 1592 "sin.tab.c"
     break;
 
   case 33: /* expressao: '(' expressao ')'  */
-#line 230 "sin.y"
-                              { (yyval.info) = (yyvsp[-1].info); }
-#line 1453 "sin.tab.c"
+#line 373 "sin.y"
+                              {
+                (yyval.info) = (yyvsp[-1].info);
+            }
+#line 1600 "sin.tab.c"
     break;
 
   case 34: /* expressao: '-' expressao  */
-#line 233 "sin.y"
-                                       { 
-                (yyval.info).tipo_val = (yyvsp[0].info).tipo_val; 
-                (yyval.info).temp = novo_temp((yyval.info).tipo_val); 
-                sprintf(buf, "%s = -%s;\n", (yyval.info).temp, (yyvsp[0].info).temp); 
-                strcat(instrucoes, buf); 
+#line 377 "sin.y"
+                                       {
+                (yyval.info).tipo_val = (yyvsp[0].info).tipo_val;
+                (yyval.info).temp = novo_temp((yyval.info).tipo_val);
+                sprintf(buf, "%s = -%s;\n", (yyval.info).temp, (yyvsp[0].info).temp);
+                strcat(instrucoes, buf);
+                char *ce = (char*) malloc(strlen((yyvsp[0].info).c_expr) + 4);
+                sprintf(ce, "(-%s)", (yyvsp[0].info).c_expr);
+                (yyval.info).c_expr = ce;
             }
-#line 1464 "sin.tab.c"
+#line 1614 "sin.tab.c"
     break;
 
 
-#line 1468 "sin.tab.c"
+#line 1618 "sin.tab.c"
 
       default: break;
     }
@@ -1657,12 +1807,32 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 241 "sin.y"
+#line 388 "sin.y"
 
 
 int main() {
     yyparse();
-    printf("Codigo Intermediario:\n");
-    printf("%s\n%s", declaracoes, instrucoes);   
+
+    /* Codigo Intermediario */
+    printf("=== Codigo Intermediario ===\n");
+    printf("%s\n%s\n", declaracoes, instrucoes);
+
+    /* Codigo C */
+    printf("=== Codigo C ===\n");
+    printf("#include <stdio.h>\n\nint main() {\n");
+
+    char tmp1[5000], tmp2[5000];
+
+    strcpy(tmp1, c_decl);
+    for (char *l = strtok(tmp1, "\n"); l; l = strtok(NULL, "\n"))
+        printf("    %s\n", l);
+
+    printf("\n");
+
+    strcpy(tmp2, c_body);
+    for (char *l = strtok(tmp2, "\n"); l; l = strtok(NULL, "\n"))
+        printf("    %s\n", l);
+
+    printf("    return 0;\n}\n");
     return 0;
 }
