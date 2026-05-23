@@ -1,0 +1,7 @@
+bool a;
+int x;
+int y;
+
+a = true;
+x = 10;
+y = x + a;
