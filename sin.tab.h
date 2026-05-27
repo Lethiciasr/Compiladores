@@ -59,21 +59,31 @@ extern int yydebug;
     NUM_FLOAT = 260,               /* NUM_FLOAT  */
     CHAR_LIT = 261,                /* CHAR_LIT  */
     BOOL_LIT = 262,                /* BOOL_LIT  */
-    TOKEN_INT = 263,               /* TOKEN_INT  */
-    TOKEN_FLOAT = 264,             /* TOKEN_FLOAT  */
-    TOKEN_CHAR = 265,              /* TOKEN_CHAR  */
-    TOKEN_BOOL = 266,              /* TOKEN_BOOL  */
-    ASSIGN = 267,                  /* ASSIGN  */
-    PLUS = 268,                    /* PLUS  */
-    AND = 269,                     /* AND  */
-    OR = 270,                      /* OR  */
-    EQ = 271,                      /* EQ  */
-    NE = 272,                      /* NE  */
-    LE = 273,                      /* LE  */
-    GE = 274,                      /* GE  */
-    NOT = 275,                     /* NOT  */
-    CAST = 276,                    /* CAST  */
-    UMINUS = 277                   /* UMINUS  */
+    STRING_LIT = 263,              /* STRING_LIT  */
+    TOKEN_INT = 264,               /* TOKEN_INT  */
+    TOKEN_FLOAT = 265,             /* TOKEN_FLOAT  */
+    TOKEN_CHAR = 266,              /* TOKEN_CHAR  */
+    TOKEN_BOOL = 267,              /* TOKEN_BOOL  */
+    ASSIGN = 268,                  /* ASSIGN  */
+    PLUS = 269,                    /* PLUS  */
+    AND = 270,                     /* AND  */
+    OR = 271,                      /* OR  */
+    EQ = 272,                      /* EQ  */
+    NE = 273,                      /* NE  */
+    LE = 274,                      /* LE  */
+    GE = 275,                      /* GE  */
+    NOT = 276,                     /* NOT  */
+    TOKEN_IF = 277,                /* TOKEN_IF  */
+    TOKEN_ELSE = 278,              /* TOKEN_ELSE  */
+    TOKEN_WHILE = 279,             /* TOKEN_WHILE  */
+    TOKEN_DO = 280,                /* TOKEN_DO  */
+    TOKEN_FOR = 281,               /* TOKEN_FOR  */
+    TOKEN_BREAK = 282,             /* TOKEN_BREAK  */
+    TOKEN_CONTINUE = 283,          /* TOKEN_CONTINUE  */
+    TOKEN_PRINT = 284,             /* TOKEN_PRINT  */
+    TOKEN_READ = 285,              /* TOKEN_READ  */
+    CAST = 286,                    /* CAST  */
+    UMINUS = 287                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -82,16 +92,17 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 15 "sin.y"
+#line 16 "sin.y"
 
     char* valor_str;
     struct {
         char* temp;
         char* c_expr;
+        char* label;
         int tipo_val;
     } info;
 
-#line 95 "sin.tab.h"
+#line 106 "sin.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

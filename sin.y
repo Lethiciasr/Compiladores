@@ -4,12 +4,13 @@
 #include <string.h>
 #include "tabela.h"
 
+extern void entrar_escopo();
+extern void sair_escopo();
 extern int yylex();
 void yyerror(const char *s) { printf("Erro: %s\n", s); }
 
 char buf[200];
-char c_decl[5000] = "";
-char c_body[5000] = "";
+extern char c_decl[5000], c_body[5000], instrucoes[5000];
 %}
 
 %union {
@@ -17,13 +18,15 @@ char c_body[5000] = "";
     struct {
         char* temp;
         char* c_expr;
+        char* label;
         int tipo_val;
     } info;
 }
 
-%token <valor_str> ID NUM_INT NUM_FLOAT CHAR_LIT BOOL_LIT
+%token <valor_str> ID NUM_INT NUM_FLOAT CHAR_LIT BOOL_LIT STRING_LIT
 %token TOKEN_INT TOKEN_FLOAT TOKEN_CHAR TOKEN_BOOL ASSIGN PLUS
 %token AND OR EQ NE LE GE NOT
+%token TOKEN_IF TOKEN_ELSE TOKEN_WHILE TOKEN_DO TOKEN_FOR TOKEN_BREAK TOKEN_CONTINUE TOKEN_PRINT TOKEN_READ
 
 %left OR
 %left AND
@@ -34,17 +37,51 @@ char c_body[5000] = "";
 %right CAST
 %right UMINUS
 
-%type <info> expressao
+%type <info> expressao comando
 
 %%
 
 programa : comandos ;
 
-comandos : comando comandos | ;
+comandos : comando comandos 
+         | /* vazio */ ;
 
-comando : declaracao ';'
-        | atribuicao ';'
-        | expressao ';' ;
+comando : declaracao ';' { $$.temp = ""; $$.c_expr = ""; $$.label = ""; $$.tipo_val = 0; }
+        | atribuicao ';' { $$.temp = ""; $$.c_expr = ""; $$.label = ""; $$.tipo_val = 0; }
+        | expressao ';'  { $$ = $1; } 
+        | TOKEN_PRINT expressao ';' {
+            if ($2.tipo_val == T_INT || $2.tipo_val == T_BOOL) sprintf(buf, "printf(\"%%d\\n\", %s);\n", $2.c_expr);
+            else if ($2.tipo_val == T_FLOAT) sprintf(buf, "printf(\"%%f\\n\", %s);\n", $2.c_expr);
+            else if ($2.tipo_val == T_CHAR) sprintf(buf, "printf(\"%%c\\n\", %s);\n", $2.c_expr);
+            else if ($2.tipo_val == T_STRING) sprintf(buf, "printf(\"%%s\\n\", %s);\n", $2.c_expr);
+            strcat(c_body, buf);
+            sprintf(buf, "param %s;\ncall print, 1;\n", $2.temp);
+            strcat(instrucoes, buf);
+            $$.temp = ""; $$.c_expr = ""; $$.label = ""; $$.tipo_val = 0;
+        }
+        | TOKEN_IF '(' expressao ')' <info> {
+           if ($3.tipo_val != T_BOOL) {
+                yyerror("Erro Semantico: Condicao do IF deve ser do tipo BOOL.");
+                YYERROR;
+            }
+            $$.label = novo_label();
+            sprintf(buf, "ifFalse %s goto %s;\n", $3.temp, $$.label);
+            strcat(instrucoes, buf);
+        } bloco {
+            sprintf(buf, "%s:\n", $5.label);
+            strcat(instrucoes, buf);
+        }
+        | bloco { $$.temp = ""; $$.c_expr = ""; $$.label = ""; $$.tipo_val = 0; }
+        ;
+
+bloco : '{' { entrar_escopo(); } lista_comandos '}' { sair_escopo(); }
+      ;
+
+      
+
+lista_comandos : /* vazio */
+               | lista_comandos comando
+               ;
 
 declaracao : TOKEN_INT   ID {
                 inserir($2, T_INT);
@@ -67,7 +104,7 @@ declaracao : TOKEN_INT   ID {
                 strcat(c_decl, buf);
              }
            ;
-
+           
 atribuicao : ID ASSIGN expressao {
     Simbolo *s = buscar($1);
     if (!s) {
@@ -97,7 +134,6 @@ atribuicao : ID ASSIGN expressao {
         if (sem_erro) {
             sprintf(buf, "%s = %s;\n", s->temp, valor_final);
             strcat(instrucoes, buf);
-
             sprintf(buf, "%s = %s;\n", s->nome, c_expr_final);
             strcat(c_body, buf);
         }
@@ -107,6 +143,13 @@ atribuicao : ID ASSIGN expressao {
 expressao : NUM_INT {
                 $$.tipo_val = T_INT;
                 $$.temp   = novo_temp(T_INT);
+                $$.c_expr = strdup($1);
+                sprintf(buf, "%s = %s;\n", $$.temp, $1);
+                strcat(instrucoes, buf);
+            }
+          | STRING_LIT {
+                $$.tipo_val = T_STRING;
+                $$.temp   = novo_temp(T_STRING);
                 $$.c_expr = strdup($1);
                 sprintf(buf, "%s = %s;\n", $$.temp, $1);
                 strcat(instrucoes, buf);
@@ -140,7 +183,7 @@ expressao : NUM_INT {
                     $$.c_expr = strdup(s->nome);
                 } else {
                     yyerror("Var nao declarada");
-                    $$.temp   = "ERRO";
+                    $$.temp   = strdup("ERRO");
                     $$.c_expr = strdup("ERRO");
                     $$.tipo_val = T_INT;
                 }
@@ -148,7 +191,7 @@ expressao : NUM_INT {
           | expressao PLUS expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Operadores booleanos nao sao permitidos em operacoes aritmeticas (+).");
-                    $$.tipo_val = T_INT; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_INT; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
                     if ($1.tipo_val != $3.tipo_val) {
@@ -174,7 +217,7 @@ expressao : NUM_INT {
           | expressao '-' expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Operadores booleanos nao sao permitidos em operacoes aritmeticas (-).");
-                    $$.tipo_val = T_INT; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_INT; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
                     if ($1.tipo_val != $3.tipo_val) {
@@ -200,7 +243,7 @@ expressao : NUM_INT {
           | expressao '*' expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Operadores booleanos nao sao permitidos em operacoes aritmeticas (*).");
-                    $$.tipo_val = T_INT; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_INT; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
                     if ($1.tipo_val != $3.tipo_val) {
@@ -226,7 +269,7 @@ expressao : NUM_INT {
           | expressao '/' expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Operadores booleanos nao sao permitidos em operacoes aritmeticas (/).");
-                    $$.tipo_val = T_INT; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_INT; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
                     if ($1.tipo_val != $3.tipo_val) {
@@ -252,7 +295,7 @@ expressao : NUM_INT {
           | expressao EQ expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e permitido fazer essa operacao relacional (==) envolvendo tipo bool.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -266,7 +309,7 @@ expressao : NUM_INT {
           | expressao NE expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e permitido fazer essa operacao relacional (!=) envolvendo tipo bool.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -280,7 +323,7 @@ expressao : NUM_INT {
           | expressao '>' expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e permitido fazer essa operacao de grandeza (>) envolvendo tipo bool.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -294,7 +337,7 @@ expressao : NUM_INT {
           | expressao '<' expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e permitido fazer essa operacao de grandeza (<) envolvendo tipo bool.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -308,7 +351,7 @@ expressao : NUM_INT {
           | expressao GE expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e permitido fazer essa operacao de grandeza (>=) envolvendo tipo bool.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -322,7 +365,7 @@ expressao : NUM_INT {
           | expressao LE expressao {
                 if ($1.tipo_val == T_BOOL || $3.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e permitido fazer essa operacao de grandeza (<=) envolvendo tipo bool.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -336,7 +379,7 @@ expressao : NUM_INT {
           | expressao AND expressao {
                 if ($1.tipo_val != T_BOOL || $3.tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador AND requer operandos exclusivamente booleanos.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -350,7 +393,7 @@ expressao : NUM_INT {
           | expressao OR expressao {
                 if ($1.tipo_val != T_BOOL || $3.tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador OR requer operandos exclusivamente booleanos.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -364,7 +407,7 @@ expressao : NUM_INT {
           | NOT expressao {
                 if ($2.tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador NOT requer um operando booleano.");
-                    $$.tipo_val = T_BOOL; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_BOOL; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
@@ -405,7 +448,7 @@ expressao : NUM_INT {
           | '-' expressao %prec UMINUS {
                 if ($2.tipo_val == T_BOOL) {
                     yyerror("Erro Semantico: Nao e possivel aplicar o operador de inversao (-) a um tipo booleano.");
-                    $$.tipo_val = T_INT; $$.temp = "ERRO"; $$.c_expr = strdup("ERRO");
+                    $$.tipo_val = T_INT; $$.temp = strdup("ERRO"); $$.c_expr = strdup("ERRO");
                 } else {
                     $$.tipo_val = $2.tipo_val;
                     $$.temp = novo_temp($$.tipo_val);

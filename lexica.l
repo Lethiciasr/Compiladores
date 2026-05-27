@@ -7,6 +7,16 @@
 %option noyywrap
 %%
 
+"if"        { return TOKEN_IF; }
+"else"      { return TOKEN_ELSE; }
+"while"     { return TOKEN_WHILE; }
+"do"        { return TOKEN_DO; }
+"for"       { return TOKEN_FOR; }
+"break"     { return TOKEN_BREAK; }
+"continue"  { return TOKEN_CONTINUE; }
+"print"     { return TOKEN_PRINT; }
+"read"      { return TOKEN_READ; }
+
 "int"       { return TOKEN_INT; }
 "float"     { return TOKEN_FLOAT; }
 "char"      { return TOKEN_CHAR; }
@@ -20,18 +30,22 @@
 "!="        { return NE; }
 "<="        { return LE; }
 ">="        { return GE; }
-"<"         { return '<'; }
-">"         { return '>'; }
 "=="        { return EQ; }
 
-[0-9]+      { 
-                yylval.valor_str = strdup(yytext); 
-                return NUM_INT; 
-            }
+"{"         { return '{'; }
+"}"         { return '}'; }
+";"         { return ';'; }
+"="         { return ASSIGN; }
+"+"         { return PLUS; }
+"-"         { return '-'; }
+"*"         { return '*'; }
+"/"         { return '/'; }
+"<"         { return '<'; }
+">"         { return '>'; }
 
-[a-zA-Z_][a-zA-Z0-9_]* { 
+\"([^\"\\\\]|\\\\.)*\" { 
                 yylval.valor_str = strdup(yytext); 
-                return ID; 
+                return STRING_LIT; 
             }
 
 [0-9]+\.[0-9]+ { 
@@ -39,19 +53,22 @@
                 return NUM_FLOAT; 
             }
 
+[0-9]+      { 
+                yylval.valor_str = strdup(yytext); 
+                return NUM_INT; 
+            }
+
 '[a-zA-Z0-9]' { 
                 yylval.valor_str = strdup(yytext); 
                 return CHAR_LIT; 
             }
 
-"="         { return ASSIGN; }
-"+"         { return PLUS; }
-";"         { return ';'; }
-"-"         { return '-'; }
-"*"         { return '*'; }
-"/"         { return '/'; }
+[a-zA-Z_][a-zA-Z0-9_]* { 
+                yylval.valor_str = strdup(yytext); 
+                return ID; 
+            }
 
-[ \t\r\n]+  { /* Ignora espaços, tabs, retornos de carro e quebras de linha */ }
+[ \t\r\n]+  { /* Ignora espaços em branco */ }
 
 .           { return yytext[0]; }
 
