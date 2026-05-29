@@ -54,36 +54,41 @@ extern int yydebug;
     YYEOF = 0,                     /* "end of file"  */
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
-    ID = 258,                      /* ID  */
-    NUM_INT = 259,                 /* NUM_INT  */
-    NUM_FLOAT = 260,               /* NUM_FLOAT  */
-    CHAR_LIT = 261,                /* CHAR_LIT  */
-    BOOL_LIT = 262,                /* BOOL_LIT  */
-    STRING_LIT = 263,              /* STRING_LIT  */
-    TOKEN_INT = 264,               /* TOKEN_INT  */
-    TOKEN_FLOAT = 265,             /* TOKEN_FLOAT  */
-    TOKEN_CHAR = 266,              /* TOKEN_CHAR  */
-    TOKEN_BOOL = 267,              /* TOKEN_BOOL  */
-    ASSIGN = 268,                  /* ASSIGN  */
-    PLUS = 269,                    /* PLUS  */
-    AND = 270,                     /* AND  */
-    OR = 271,                      /* OR  */
-    EQ = 272,                      /* EQ  */
-    NE = 273,                      /* NE  */
-    LE = 274,                      /* LE  */
-    GE = 275,                      /* GE  */
-    NOT = 276,                     /* NOT  */
-    TOKEN_IF = 277,                /* TOKEN_IF  */
-    TOKEN_ELSE = 278,              /* TOKEN_ELSE  */
-    TOKEN_WHILE = 279,             /* TOKEN_WHILE  */
-    TOKEN_DO = 280,                /* TOKEN_DO  */
-    TOKEN_FOR = 281,               /* TOKEN_FOR  */
+    TOKEN_FOR = 258,               /* TOKEN_FOR  */
+    TOKEN_MAIN = 259,              /* TOKEN_MAIN  */
+    ID = 260,                      /* ID  */
+    NUM_INT = 261,                 /* NUM_INT  */
+    NUM_FLOAT = 262,               /* NUM_FLOAT  */
+    CHAR_LIT = 263,                /* CHAR_LIT  */
+    BOOL_LIT = 264,                /* BOOL_LIT  */
+    STRING_LIT = 265,              /* STRING_LIT  */
+    TOKEN_INT = 266,               /* TOKEN_INT  */
+    TOKEN_FLOAT = 267,             /* TOKEN_FLOAT  */
+    TOKEN_CHAR = 268,              /* TOKEN_CHAR  */
+    TOKEN_BOOL = 269,              /* TOKEN_BOOL  */
+    TOKEN_STRING = 270,            /* TOKEN_STRING  */
+    ASSIGN = 271,                  /* ASSIGN  */
+    PLUS = 272,                    /* PLUS  */
+    TOKEN_PRINT = 273,             /* TOKEN_PRINT  */
+    TOKEN_READ = 274,              /* TOKEN_READ  */
+    TOKEN_IF = 275,                /* TOKEN_IF  */
+    TOKEN_ELSE = 276,              /* TOKEN_ELSE  */
+    TOKEN_WHILE = 277,             /* TOKEN_WHILE  */
+    TOKEN_DO = 278,                /* TOKEN_DO  */
+    TOKEN_SWITCH = 279,            /* TOKEN_SWITCH  */
+    TOKEN_CASE = 280,              /* TOKEN_CASE  */
+    TOKEN_DEFAULT = 281,           /* TOKEN_DEFAULT  */
     TOKEN_BREAK = 282,             /* TOKEN_BREAK  */
     TOKEN_CONTINUE = 283,          /* TOKEN_CONTINUE  */
-    TOKEN_PRINT = 284,             /* TOKEN_PRINT  */
-    TOKEN_READ = 285,              /* TOKEN_READ  */
-    CAST = 286,                    /* CAST  */
-    UMINUS = 287                   /* UMINUS  */
+    AND = 284,                     /* AND  */
+    OR = 285,                      /* OR  */
+    EQ = 286,                      /* EQ  */
+    NE = 287,                      /* NE  */
+    LE = 288,                      /* LE  */
+    GE = 289,                      /* GE  */
+    NOT = 290,                     /* NOT  */
+    CAST = 291,                    /* CAST  */
+    UMINUS = 292                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -92,17 +97,16 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 16 "sin.y"
+#line 24 "sin.y"
 
     char* valor_str;
     struct {
         char* temp;
         char* c_expr;
-        char* label;
         int tipo_val;
     } info;
 
-#line 106 "sin.tab.h"
+#line 110 "sin.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
