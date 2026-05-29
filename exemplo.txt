@@ -1,10 +1,12 @@
 main() {
 
-    bool ativo;
-    int idade;
+    int x;
 
-    ativo = true;
+    x = 0;
 
-    idade = ativo;
+    while (x < 5) {
+        print(x);
+        x = x + 1;
+    }
 
 }

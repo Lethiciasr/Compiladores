@@ -408,14 +408,20 @@ atribuicao : ID ASSIGN expressao {
 
         if (s->tipo == T_FLOAT && $3.tipo_val == T_INT) {
             valor_final = gerar_cast($3.temp, T_FLOAT);
-            char *tmp = (char*) malloc(strlen(c_expr_final) + 16);
-            sprintf(tmp, "(float)(%s)", c_expr_final);
+            char *tmp = (char*) malloc(256);
+            strcpy(tmp, "(float)(");
+            strcat(tmp, c_expr_final);
+                strcat(tmp, ")");
             c_expr_final = tmp;
+
         } else if (s->tipo == T_INT && $3.tipo_val == T_FLOAT) {
-            valor_final = gerar_cast($3.temp, T_INT);
-            char *tmp = (char*) malloc(strlen(c_expr_final) + 16);
-            sprintf(tmp, "(int)(%s)", c_expr_final);
-            c_expr_final = tmp;
+        valor_final = gerar_cast($3.temp, T_INT);
+        char *tmp = (char*) malloc(256);
+        strcpy(tmp, "(int)(");
+        strcat(tmp, c_expr_final);
+        strcat(tmp, ")");
+        c_expr_final = tmp;
+
         } else if (s->tipo != $3.tipo_val) {
             yyerror("Erro Semantico: Atribuicao com tipos incompativeis.");
             sem_erro = 0;
@@ -488,26 +494,31 @@ expressao : NUM_INT {
                     $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_INT;
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
-                    if ($1.tipo_val != $3.tipo_val) {
-                        if ($1.tipo_val == T_INT) {
-                            $1.temp = gerar_cast($1.temp, T_FLOAT); $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
-                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
-                        } else {
-                            $3.temp = gerar_cast($3.temp, T_FLOAT); $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
-                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
-                        }
+                   if ($1.tipo_val == T_INT) {
+                        $1.temp = gerar_cast($1.temp, T_FLOAT);
+                        $1.tipo_val = T_FLOAT;
+
+                        char *tmp = (char*) malloc(256);
+                        sprintf(tmp, "(float)(%s)", ce1);
+                        ce1 = tmp;
+                    } else {
+                        $3.temp = gerar_cast($3.temp, T_FLOAT);
+                        $3.tipo_val = T_FLOAT;
+
+                        char *tmp = (char*) malloc(256);
+                        sprintf(tmp, "(float)(%s)", ce3);
+                        ce3 = tmp;
                     }
-                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                    }
+                   $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s + %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
-                    sprintf(ce, "(%s + %s)", ce1, ce3);
+
+                    char *ce = (char*) malloc(256);
+                    sprintf(ce, "(%s + %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
-            }
           | expressao '-' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
@@ -518,11 +529,11 @@ expressao : NUM_INT {
                     if ($1.tipo_val != $3.tipo_val) {
                         if ($1.tipo_val == T_INT) {
                             $1.temp = gerar_cast($1.temp, T_FLOAT); $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            char *tmp = (char*) malloc(256);
                             sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
                         } else {
                             $3.temp = gerar_cast($3.temp, T_FLOAT); $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            char *tmp = (char*) malloc(256);
                             sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
                         }
                     }
@@ -530,7 +541,8 @@ expressao : NUM_INT {
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s - %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s - %s)", ce1, ce3);
                     $$.c_expr = ce;
                 }
@@ -542,26 +554,31 @@ expressao : NUM_INT {
                     $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_INT;
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
-                    if ($1.tipo_val != $3.tipo_val) {
-                        if ($1.tipo_val == T_INT) {
-                            $1.temp = gerar_cast($1.temp, T_FLOAT); $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
-                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
-                        } else {
-                            $3.temp = gerar_cast($3.temp, T_FLOAT); $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
-                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
-                        }
+                    if ($1.tipo_val == T_INT) {
+                        $1.temp = gerar_cast($1.temp, T_FLOAT);
+                        $1.tipo_val = T_FLOAT;
+
+                        char *tmp = (char*) malloc(256);
+                        sprintf(tmp, "(float)(%s)", ce1);
+                        ce1 = tmp;
+                    } else {
+                        $3.temp = gerar_cast($3.temp, T_FLOAT);
+                        $3.tipo_val = T_FLOAT;
+
+                        char *tmp = (char*) malloc(256);
+                        sprintf(tmp, "(float)(%s)", ce3);
+                        ce3 = tmp;
+                    }
                     }
                     $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s * %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
-                    sprintf(ce, "(%s * %s)", ce1, ce3);
+
+                    char *ce = (char*) malloc(256);
+                    sprintf(ce, "(%s + %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
-            }
           | expressao '/' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
@@ -569,26 +586,31 @@ expressao : NUM_INT {
                     $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_INT;
                 } else {
                     char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
-                    if ($1.tipo_val != $3.tipo_val) {
-                        if ($1.tipo_val == T_INT) {
-                            $1.temp = gerar_cast($1.temp, T_FLOAT); $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
-                            sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
-                        } else {
-                            $3.temp = gerar_cast($3.temp, T_FLOAT); $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
-                            sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
-                        }
+                   if ($1.tipo_val == T_INT) {
+                        $1.temp = gerar_cast($1.temp, T_FLOAT);
+                        $1.tipo_val = T_FLOAT;
+
+                        char *tmp = (char*) malloc(256);
+                        sprintf(tmp, "(float)(%s)", ce1);
+                        ce1 = tmp;
+                    } else {
+                        $3.temp = gerar_cast($3.temp, T_FLOAT);
+                        $3.tipo_val = T_FLOAT;
+
+                        char *tmp = (char*) malloc(256);
+                        sprintf(tmp, "(float)(%s)", ce3);
+                        ce3 = tmp;
+                    }
                     }
                     $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s / %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
-                    sprintf(ce, "(%s / %s)", ce1, ce3);
+
+                    char *ce = (char*) malloc(256);
+                    sprintf(ce, "(%s + %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
-            }
 
           /* --- RELACIONAIS (C/ Checagem de Tipo) --- */
           | expressao EQ expressao {
@@ -601,7 +623,7 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s == %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s == %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
@@ -616,8 +638,8 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s != %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
-                    sprintf(ce, "(%s != %s)", $1.c_expr, $3.c_expr);
+                    char *ce = (char*) malloc(256);
+                    sprintf(ce, "(%s < %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
             }
@@ -631,8 +653,8 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s > %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
-                    sprintf(ce, "(%s > %s)", $1.c_expr, $3.c_expr);
+                   char *ce = (char*) malloc(256);
+                   sprintf(ce, "(%s < %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
             }
@@ -646,7 +668,7 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s < %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s < %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
@@ -661,7 +683,7 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s >= %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s >= %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
@@ -676,7 +698,7 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s <= %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s <= %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
@@ -692,7 +714,7 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s && %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s && %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
@@ -706,7 +728,7 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s || %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(256);
                     sprintf(ce, "(%s || %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
                 }
@@ -720,46 +742,65 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = !%s;\n", $$.temp, $2.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($2.c_expr) + 4);
+                    char *ce = (char*) malloc(200);
                     sprintf(ce, "(!%s)", $2.c_expr);
-                    $$.c_expr = ce;
+                     $$.c_expr = ce;
                 }
             }
 
-          | '(' TOKEN_INT ')' expressao %prec CAST {
+                            | '(' TOKEN_INT ')' expressao %prec CAST {
+                        char* temp_copia = novo_temp($4.tipo_val);
+                        sprintf(buf, "%s = %s;\n", temp_copia, $4.temp);
+                        strcat(instrucoes, buf);
+
+                        $$.tipo_val = T_INT;
+                        $$.temp = novo_temp(T_INT);
+
+                        sprintf(buf, "%s = (int) %s;\n", $$.temp, temp_copia);
+                        strcat(instrucoes, buf);
+
+                        char *ce = (char*) malloc(256);
+
+                        strcpy(ce, "(int)(");
+                        strcat(ce, $4.c_expr);
+                        strcat(ce, ")");
+
+                        $$.c_expr = ce;
+                    }
+                    | '(' TOKEN_FLOAT ')' expressao %prec CAST {
                 char* temp_copia = novo_temp($4.tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, $4.temp);
                 strcat(instrucoes, buf);
-                $$.tipo_val = T_INT;
-                $$.temp = novo_temp(T_INT);
-                sprintf(buf, "%s = (int) %s;\n", $$.temp, temp_copia);
-                strcat(instrucoes, buf);
-                char *ce = (char*) malloc(strlen($4.c_expr) + 16);
-                sprintf(ce, "(int)(%s)", $4.c_expr);
-                $$.c_expr = ce;
-            }
-          | '(' TOKEN_FLOAT ')' expressao %prec CAST {
-                char* temp_copia = novo_temp($4.tipo_val);
-                sprintf(buf, "%s = %s;\n", temp_copia, $4.temp);
-                strcat(instrucoes, buf);
+
                 $$.tipo_val = T_FLOAT;
                 $$.temp = novo_temp(T_FLOAT);
+
                 sprintf(buf, "%s = (float) %s;\n", $$.temp, temp_copia);
                 strcat(instrucoes, buf);
-                char *ce = (char*) malloc(strlen($4.c_expr) + 16);
-                sprintf(ce, "(float)(%s)", $4.c_expr);
+
+                char *ce = (char*) malloc(256);
+
+                strcpy(ce, "(float)(");
+                strcat(ce, $4.c_expr);
+                strcat(ce, ")");
+
                 $$.c_expr = ce;
             }
           | '(' expressao ')' {
                 $$ = $2;
             }
-          | '-' expressao %prec UMINUS {
+                    | '-' expressao %prec UMINUS {
                 $$.tipo_val = $2.tipo_val;
                 $$.temp = novo_temp($$.tipo_val);
                 sprintf(buf, "%s = -%s;\n", $$.temp, $2.temp);
                 strcat(instrucoes, buf);
-                char *ce = (char*) malloc(strlen($2.c_expr) + 4);
-                sprintf(ce, "(-%s)", $2.c_expr);
+
+                char *ce = (char*) malloc(256);
+
+                strcpy(ce, "(-");
+                strcat(ce, $2.c_expr);
+                strcat(ce, ")");
+
                 $$.c_expr = ce;
             }
           ;
