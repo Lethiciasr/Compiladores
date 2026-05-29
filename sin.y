@@ -5,10 +5,21 @@
 #include "tabela.h"
 
 extern int yylex();
-int total_erros = 0; // NOVO: Contador global de erros
+int total_erros = 0;
+
 void yyerror(const char *s) { 
     printf("Erro: %s\n", s); 
-    total_erros++; // NOVO: Incrementa o erro sempre que chamado
+    total_erros++;
+}
+
+//FUNÇÃO: Substitui o strlen nativo
+int meu_strlen(const char *str) {
+    int len = 0;
+    if (str == NULL) return 0;
+    while (str[len] != '\0') {
+        len++;
+    }
+    return len;
 }
 
 char buf[200];
@@ -25,7 +36,6 @@ int topo_laco = 0;
 // Pilha para controle rigoroso de escopo do Switch
 char pilha_switch_fim[20][50];
 int topo_switch = 0;
-
 int escopo_atual = 0;
 %}
 
@@ -62,20 +72,21 @@ int escopo_atual = 0;
 programa : comandos ;
 comandos : comando comandos | ;
 
-bloco : '{' { escopo_atual++; } comandos_bloco '}' {
+bloco : '{' { escopo_atual++;
+} comandos_bloco '}' {
             remover_simbolos_do_nivel(escopo_atual);
             escopo_atual--;
-        }
+}
     ;
 
 comandos_bloco : comando comandos_bloco
                 |
-                ;
+;
 
 /* --- REGRA AUXILIAR DO IF --- */
 if_cond : TOKEN_IF '(' expressao ')' {
-    if ($3.tipo_val != T_BOOL) {
-        yyerror("Erro Semantico: A condicao do 'if' deve ser booleana.");
+    if ($3.tipo_val != T_BOOL && $3.tipo_val != T_INT) {
+        yyerror("Erro Semantico: A condicao do 'if' deve ser booleana ou inteira.");
     }
     char* l_false = novo_label();
     
@@ -87,7 +98,6 @@ if_cond : TOKEN_IF '(' expressao ')' {
     $<valor_str>$ = l_false; 
 }
 ;
-
 /* --- REGRA AUXILIAR DO FOR --- */
 incremento_for : ID ASSIGN expressao {
     Simbolo *s = buscar($1);
@@ -101,10 +111,11 @@ incremento_for : ID ASSIGN expressao {
 ;
 
 casos_lista : caso casos_lista
-            | default_caso
-            | /* vazio */
+            |
+default_caso
+            |
+/* vazio */
             ;
-
 caso : TOKEN_CASE expressao ':' {
         char* l_proximo = novo_label();
         char* t_cmp = novo_temp(T_BOOL);
@@ -114,28 +125,27 @@ caso : TOKEN_CASE expressao ':' {
         strcat(instrucoes, buf);
         sprintf(buf, "case %s:\n", $2.c_expr);
         strcat(c_body, buf);
-        $<valor_str>$ = l_proximo; 
-    } comandos_bloco {
+        $<valor_str>$ = l_proximo;
+} comandos_bloco {
         sprintf(buf, "%s:\n", $<valor_str>4);
         strcat(instrucoes, buf);
     }
     ;
-
 default_caso : TOKEN_DEFAULT ':' {
         strcat(c_body, "default:\n");
-    } comandos_bloco {
+} comandos_bloco {
         // O default termina sem necessidade de desvios explícitos no 3AC
     }
     ;
-
 comando : declaracao ';'
         | atribuicao ';'
         | expressao ';' 
-        | bloco 
-        | TOKEN_PRINT '(' expressao ')' ';' {
+        |
+bloco 
+        | TOKEN_PRINT '(' expressao ')' ';'
+{
             sprintf(buf, "print %s;\n", $3.temp);
             strcat(instrucoes, buf);
-
             char* formato = "";
             if ($3.tipo_val == T_INT || $3.tipo_val == T_BOOL) formato = "%d";
             else if ($3.tipo_val == T_FLOAT) formato = "%f";
@@ -144,8 +154,9 @@ comando : declaracao ';'
 
             sprintf(buf, "printf(\"%s\\n\", %s);\n", formato, $3.c_expr);
             strcat(c_body, buf);
-        }
-        | TOKEN_READ '(' ID ')' ';' {
+}
+        | TOKEN_READ '(' ID ')' ';'
+{
             Simbolo *s = buscar($3);
             if (!s) {
                 char erro_msg[100];
@@ -158,8 +169,7 @@ comando : declaracao ';'
                 char* formato = "";
                 if (s->tipo == T_INT || s->tipo == T_BOOL) formato = "%d";
                 else if (s->tipo == T_FLOAT) formato = "%f";
-                else if (s->tipo == T_CHAR) formato = " %c"; 
-
+                else if (s->tipo == T_CHAR) formato = " %c";
                 if (s->tipo == T_STRING) {
                     sprintf(buf, "%s = (char*) malloc(256);\n", s->nome);
                     strcat(c_body, buf);
@@ -170,12 +180,14 @@ comando : declaracao ';'
                 strcat(c_body, buf);
             }
         } 
-        | if_cond comando {
+        |
+if_cond comando {
             sprintf(buf, "%s:\n", $<valor_str>1);
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
         }
-        | if_cond comando TOKEN_ELSE {
+        |
+if_cond comando TOKEN_ELSE {
             char* l_fim = novo_label();
             sprintf(buf, "goto %s;\n", l_fim);
             strcat(instrucoes, buf);
@@ -185,12 +197,13 @@ comando : declaracao ';'
             
             strcat(c_body, "} else {\n");
             $<valor_str>$ = l_fim;
-        } comando {
+} comando {
             sprintf(buf, "%s:\n", $<valor_str>4);
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
         } 
-        | TOKEN_WHILE {
+        |
+TOKEN_WHILE {
             char* l_inicio = novo_label();
             sprintf(buf, "%s:\n", l_inicio);
             strcat(instrucoes, buf);
@@ -198,7 +211,7 @@ comando : declaracao ';'
             
             strcpy(pilha_inicio[topo_laco], l_inicio);
         } '(' expressao ')' {
-            if ($4.tipo_val != T_BOOL) yyerror("Erro Semantico: Condicao deve ser booleana.");
+            if ($4.tipo_val != T_BOOL && $4.tipo_val != T_INT) yyerror("Erro Semantico: Condicao deve ser booleana ou inteira.");
             char* l_fim = novo_label();
             sprintf(buf, "ifFalse %s goto %s;\n", $4.temp, l_fim);
             strcat(instrucoes, buf);
@@ -216,7 +229,7 @@ comando : declaracao ';'
             sprintf(buf, "%s:\n", $<valor_str>6); 
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
-        }
+}
         | TOKEN_DO {
             char* l_inicio = novo_label();
             char* l_fim = novo_label();
@@ -229,10 +242,10 @@ comando : declaracao ';'
             topo_laco++; 
             
             strcat(c_body, "do {\n");
-        } comando TOKEN_WHILE '(' expressao ')' ';' {
-            topo_laco--; 
-            if ($6.tipo_val != T_BOOL) {
-                yyerror("Erro Semantico: A condicao do 'do-while' deve ser booleana.");
+} comando TOKEN_WHILE '(' expressao ')' ';' {
+            topo_laco--;
+            if ($6.tipo_val != T_BOOL && $6.tipo_val != T_INT) {
+                yyerror("Erro Semantico: A condicao do 'do-while' deve ser booleana ou inteira.");
             }
             
             sprintf(buf, "if %s goto %s;\n", $6.temp, $<valor_str>2);
@@ -243,7 +256,7 @@ comando : declaracao ';'
             
             sprintf(buf, "} while (%s);\n", $6.c_expr);
             strcat(c_body, buf);
-        }
+}
         | TOKEN_FOR '(' atribuicao ';' {
             char* l_inicio = novo_label();
             sprintf(buf, "%s:\n", l_inicio);
@@ -251,13 +264,15 @@ comando : declaracao ';'
             $<valor_str>$ = l_inicio; 
             
             strcpy(pilha_inicio[topo_laco], l_inicio); 
-        } expressao ';' {
-            if ($6.tipo_val != T_BOOL) {
-                yyerror("Erro Semantico: A condicao do 'for' deve ser booleana.");
+    
+    } expressao ';' {
+            if ($6.tipo_val != T_BOOL && $6.tipo_val != T_INT) {
+                yyerror("Erro Semantico: A condicao do 'for' deve ser booleana ou inteira.");
             }
             char* l_fim = novo_label();
             sprintf(buf, "ifFalse %s goto %s;\n", $6.temp, l_fim);
-            strcat(instrucoes, buf);
+        
+    strcat(instrucoes, buf);
             $<valor_str>$ = l_fim;
             
             strcpy(pilha_fim[topo_laco], l_fim); 
@@ -265,10 +280,10 @@ comando : declaracao ';'
             
             sprintf(buf, "while (%s) {\n", $6.c_expr);
             strcat(c_body, buf);
-            
+ 
+           
         } incremento_for ')' comando {
-            topo_laco--; 
-            
+            topo_laco--;
             strcat(instrucoes, inc_3ac);
             sprintf(buf, "%s", inc_c);
             strcat(c_body, buf);
@@ -280,7 +295,7 @@ comando : declaracao ';'
             strcat(instrucoes, buf);
             
             strcat(c_body, "}\n");
-        }
+}
         | TOKEN_SWITCH '(' expressao ')' {
             strcpy(switch_exp, $3.temp);
             char* sfim = novo_label();
@@ -289,14 +304,15 @@ comando : declaracao ';'
             
             sprintf(buf, "switch (%s) {\n", $3.c_expr);
             strcat(c_body, buf);
-        } '{' casos_lista '}' {
+} '{' casos_lista '}' {
             topo_switch--; 
             
             sprintf(buf, "%s:\n", pilha_switch_fim[topo_switch]);
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
         }
-        | TOKEN_BREAK ';' {
+        | TOKEN_BREAK ';'
+{
             if (topo_laco == 0 && topo_switch == 0) {
                 yyerror("Erro Semantico: 'break' usado fora de um laco ou switch.");
             } else {
@@ -309,7 +325,8 @@ comando : declaracao ';'
                 strcat(c_body, "break;\n");
             }
         }
-        | TOKEN_CONTINUE ';' {
+        | TOKEN_CONTINUE ';'
+{
             if (topo_laco == 0) {
                 yyerror("Erro Semantico: 'continue' usado fora de um laco de repeticao.");
             } else {
@@ -319,34 +336,36 @@ comando : declaracao ';'
             }
         }
         ;
-
 declaracao : TOKEN_INT   ID {
                 inserir($2, T_INT, escopo_atual);
                 sprintf(buf, "int %s;\n", $2);
                 strcat(c_decl, buf);
              }
-           | TOKEN_FLOAT ID {
+           |
+TOKEN_FLOAT ID {
                 inserir($2, T_FLOAT, escopo_atual);
                 sprintf(buf, "float %s;\n", $2);
                 strcat(c_decl, buf);
              }
-           | TOKEN_CHAR  ID {
+           |
+TOKEN_CHAR  ID {
                 inserir($2, T_CHAR, escopo_atual);
                 sprintf(buf, "char %s;\n", $2);
                 strcat(c_decl, buf);
              }
-           | TOKEN_BOOL  ID {
+           |
+TOKEN_BOOL  ID {
                 inserir($2, T_BOOL, escopo_atual);
                 sprintf(buf, "int %s;\n", $2);
                 strcat(c_decl, buf);
              }
-           | TOKEN_STRING ID {
+           |
+TOKEN_STRING ID {
                 inserir($2, T_STRING, escopo_atual);
                 sprintf(buf, "char* %s;\n", $2);
                 strcat(c_decl, buf);
              }
            ;
-
 atribuicao : ID ASSIGN expressao {
     Simbolo *s = buscar($1);
     if (!s) {
@@ -360,14 +379,18 @@ atribuicao : ID ASSIGN expressao {
 
         if (s->tipo == T_FLOAT && $3.tipo_val == T_INT) {
             valor_final = gerar_cast($3.temp, T_FLOAT);
-            char *tmp = (char*) malloc(strlen(c_expr_final) + 16);
+            char *tmp = (char*) malloc(meu_strlen(c_expr_final) + 16);
             sprintf(tmp, "(float)(%s)", c_expr_final);
             c_expr_final = tmp;
         } else if (s->tipo == T_INT && $3.tipo_val == T_FLOAT) {
             valor_final = gerar_cast($3.temp, T_INT);
-            char *tmp = (char*) malloc(strlen(c_expr_final) + 16);
+            char *tmp = (char*) malloc(meu_strlen(c_expr_final) + 16);
             sprintf(tmp, "(int)(%s)", c_expr_final);
             c_expr_final = tmp;
+        } else if ((s->tipo == T_INT && $3.tipo_val == T_BOOL) || 
+                 (s->tipo == T_BOOL && $3.tipo_val == T_INT)) {
+            valor_final = $3.temp;
+            c_expr_final = $3.c_expr;
         } else if (s->tipo != $3.tipo_val) {
             yyerror("Erro Semantico: Atribuicao com tipos incompativeis.");
             sem_erro = 0;
@@ -382,43 +405,47 @@ atribuicao : ID ASSIGN expressao {
         }
     }
 };
-
 expressao : NUM_INT {
                 $$.tipo_val = T_INT;
                 $$.temp   = novo_temp(T_INT);
                 $$.c_expr = strdup($1);
                 sprintf(buf, "%s = %s;\n", $$.temp, $1);
                 strcat(instrucoes, buf);
-            }
-          | NUM_FLOAT {
+}
+          |
+NUM_FLOAT {
                 $$.tipo_val = T_FLOAT;
                 $$.temp   = novo_temp(T_FLOAT);
                 $$.c_expr = strdup($1);
                 sprintf(buf, "%s = %s;\n", $$.temp, $1);
                 strcat(instrucoes, buf);
-            }
-          | CHAR_LIT {
+}
+          |
+CHAR_LIT {
                 $$.tipo_val = T_CHAR;
                 $$.temp   = novo_temp(T_CHAR);
                 $$.c_expr = strdup($1);
                 sprintf(buf, "%s = %s;\n", $$.temp, $1);
                 strcat(instrucoes, buf);
-            }
-          | BOOL_LIT {
+}
+          |
+BOOL_LIT {
                 $$.tipo_val = T_BOOL;
                 $$.temp   = novo_temp(T_BOOL);
                 $$.c_expr = strdup($1);
                 sprintf(buf, "%s = %s;\n", $$.temp, $1);
                 strcat(instrucoes, buf);
-            }
-          | STRING_LIT {
+}
+          |
+STRING_LIT {
                 $$.tipo_val = T_STRING;
                 $$.temp   = novo_temp(T_STRING);
                 $$.c_expr = strdup($1);
                 sprintf(buf, "%s = %s;\n", $$.temp, $1);
                 strcat(instrucoes, buf);
-            }
-          | ID {
+}
+          |
+ID {
                 Simbolo *s = buscar($1);
                 if (s) {
                     $$.tipo_val = s->tipo;
@@ -429,9 +456,10 @@ expressao : NUM_INT {
                     $$.temp   = "ERRO";
                     $$.c_expr = strdup("ERRO");
                     $$.tipo_val = T_INT;
-                }
+}
             }
-          | expressao PLUS expressao {
+          |
+expressao PLUS expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de soma com tipos invalidos.");
@@ -442,25 +470,27 @@ expressao : NUM_INT {
                         if ($1.tipo_val == T_INT) {
                             $1.temp = gerar_cast($1.temp, T_FLOAT);
                             $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce1) + 16);
                             sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
                         } else {
                             $3.temp = gerar_cast($3.temp, T_FLOAT);
                             $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce3) + 16);
                             sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
                         }
                     }
-                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ?
+T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s + %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    char *ce = (char*) malloc(meu_strlen(ce1) + meu_strlen(ce3) + 8);
                     sprintf(ce, "(%s + %s)", ce1, ce3);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao '-' expressao {
+          |
+expressao '-' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de subtracao com tipos invalidos.");
@@ -471,25 +501,27 @@ expressao : NUM_INT {
                         if ($1.tipo_val == T_INT) {
                             $1.temp = gerar_cast($1.temp, T_FLOAT);
                             $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce1) + 16);
                             sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
                         } else {
                             $3.temp = gerar_cast($3.temp, T_FLOAT);
                             $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce3) + 16);
                             sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
                         }
                     }
-                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ?
+T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s - %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    char *ce = (char*) malloc(meu_strlen(ce1) + meu_strlen(ce3) + 8);
                     sprintf(ce, "(%s - %s)", ce1, ce3);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao '*' expressao {
+          |
+expressao '*' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de multiplicacao com tipos invalidos.");
@@ -500,25 +532,27 @@ expressao : NUM_INT {
                         if ($1.tipo_val == T_INT) {
                             $1.temp = gerar_cast($1.temp, T_FLOAT);
                             $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce1) + 16);
                             sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
                         } else {
                             $3.temp = gerar_cast($3.temp, T_FLOAT);
                             $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce3) + 16);
                             sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
                         }
                     }
-                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ?
+T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s * %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    char *ce = (char*) malloc(meu_strlen(ce1) + meu_strlen(ce3) + 8);
                     sprintf(ce, "(%s * %s)", ce1, ce3);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao '/' expressao {
+          |
+expressao '/' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operacao de divisao com tipos invalidos.");
@@ -529,25 +563,27 @@ expressao : NUM_INT {
                         if ($1.tipo_val == T_INT) {
                             $1.temp = gerar_cast($1.temp, T_FLOAT);
                             $1.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce1) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce1) + 16);
                             sprintf(tmp, "(float)(%s)", ce1); ce1 = tmp;
                         } else {
                             $3.temp = gerar_cast($3.temp, T_FLOAT);
                             $3.tipo_val = T_FLOAT;
-                            char *tmp = (char*) malloc(strlen(ce3) + 16);
+                            char *tmp = (char*) malloc(meu_strlen(ce3) + 16);
                             sprintf(tmp, "(float)(%s)", ce3); ce3 = tmp;
                         }
                     }
-                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
+                    $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ?
+T_FLOAT : T_INT;
                     $$.temp = novo_temp($$.tipo_val);
                     sprintf(buf, "%s = %s / %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen(ce1) + strlen(ce3) + 8);
+                    char *ce = (char*) malloc(meu_strlen(ce1) + meu_strlen(ce3) + 8);
                     sprintf(ce, "(%s / %s)", ce1, ce3);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao EQ expressao {
+          |
+expressao EQ expressao {
                 if (($1.tipo_val == T_BOOL && $3.tipo_val != T_BOOL) ||
                     ($1.tipo_val != T_BOOL && $3.tipo_val == T_BOOL)) {
                     yyerror("Erro Semantico: Comparacao '==' entre tipos incompativeis.");
@@ -557,12 +593,13 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s == %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s == %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao NE expressao {
+          |
+expressao NE expressao {
                 if (($1.tipo_val == T_BOOL && $3.tipo_val != T_BOOL) ||
                     ($1.tipo_val != T_BOOL && $3.tipo_val == T_BOOL)) {
                     yyerror("Erro Semantico: Comparacao '!=' entre tipos incompativeis.");
@@ -572,12 +609,13 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s != %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s != %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao '>' expressao {
+          |
+expressao '>' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operador '>' exige operandos numericos.");
@@ -587,12 +625,13 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s > %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s > %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao '<' expressao {
+          |
+expressao '<' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operador '<' exige operandos numericos.");
@@ -602,12 +641,13 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s < %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s < %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao GE expressao {
+          |
+expressao GE expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operador '>=' exige operandos numericos.");
@@ -617,12 +657,13 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s >= %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s >= %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao LE expressao {
+          |
+expressao LE expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
                     ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
                     yyerror("Erro Semantico: Operador '<=' exige operandos numericos.");
@@ -632,54 +673,60 @@ expressao : NUM_INT {
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s <= %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s <= %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao AND expressao {
-                if ($1.tipo_val != T_BOOL || $3.tipo_val != T_BOOL) {
-                    yyerror("Erro Semantico: Operador AND requer operandos booleanos.");
+          |
+expressao AND expressao {
+                if (($1.tipo_val != T_BOOL && $1.tipo_val != T_INT) || 
+                    ($3.tipo_val != T_BOOL && $3.tipo_val != T_INT)) {
+                    yyerror("Erro Semantico: Operador AND requer operandos booleanos ou inteiros.");
                     $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_BOOL;
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s && %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s && %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | expressao OR expressao {
-                if ($1.tipo_val != T_BOOL || $3.tipo_val != T_BOOL) {
-                    yyerror("Erro Semantico: Operador OR requer operandos booleanos.");
+          |
+expressao OR expressao {
+                if (($1.tipo_val != T_BOOL && $1.tipo_val != T_INT) || 
+                    ($3.tipo_val != T_BOOL && $3.tipo_val != T_INT)) {
+                    yyerror("Erro Semantico: Operador OR requer operandos booleanos ou inteiros.");
                     $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_BOOL;
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = %s || %s;\n", $$.temp, $1.temp, $3.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($1.c_expr) + strlen($3.c_expr) + 8);
+                    char *ce = (char*) malloc(meu_strlen($1.c_expr) + meu_strlen($3.c_expr) + 8);
                     sprintf(ce, "(%s || %s)", $1.c_expr, $3.c_expr);
                     $$.c_expr = ce;
-                }
+}
             }
-          | NOT expressao {
-                if ($2.tipo_val != T_BOOL) {
-                    yyerror("Erro Semantico: Operador NOT requer operando booleano.");
+          |
+NOT expressao {
+                if ($2.tipo_val != T_BOOL && $2.tipo_val != T_INT) {
+                    yyerror("Erro Semantico: Operador NOT requer operando booleano ou inteiro.");
                     $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_BOOL;
                 } else {
                     $$.tipo_val = T_BOOL;
                     $$.temp = novo_temp(T_BOOL);
                     sprintf(buf, "%s = !%s;\n", $$.temp, $2.temp);
                     strcat(instrucoes, buf);
-                    char *ce = (char*) malloc(strlen($2.c_expr) + 4);
+                    char *ce = (char*) malloc(meu_strlen($2.c_expr) + 4);
                     sprintf(ce, "(!%s)", $2.c_expr);
                     $$.c_expr = ce;
                 }
             }
-          | '(' TOKEN_INT ')' expressao %prec CAST {
+          |
+'(' TOKEN_INT ')' expressao %prec CAST {
                 char* temp_copia = novo_temp($4.tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, $4.temp);
                 strcat(instrucoes, buf);
@@ -687,11 +734,12 @@ expressao : NUM_INT {
                 $$.temp = novo_temp(T_INT);
                 sprintf(buf, "%s = (int) %s;\n", $$.temp, temp_copia);
                 strcat(instrucoes, buf);
-                char *ce = (char*) malloc(strlen($4.c_expr) + 16);
+                char *ce = (char*) malloc(meu_strlen($4.c_expr) + 16);
                 sprintf(ce, "(int)(%s)", $4.c_expr);
                 $$.c_expr = ce;
             }
-          | '(' TOKEN_FLOAT ')' expressao %prec CAST {
+          |
+'(' TOKEN_FLOAT ')' expressao %prec CAST {
                 char* temp_copia = novo_temp($4.tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, $4.temp);
                 strcat(instrucoes, buf);
@@ -699,19 +747,21 @@ expressao : NUM_INT {
                 $$.temp = novo_temp(T_FLOAT);
                 sprintf(buf, "%s = (float) %s;\n", $$.temp, temp_copia);
                 strcat(instrucoes, buf);
-                char *ce = (char*) malloc(strlen($4.c_expr) + 16);
+                char *ce = (char*) malloc(meu_strlen($4.c_expr) + 16);
                 sprintf(ce, "(float)(%s)", $4.c_expr);
                 $$.c_expr = ce;
             }
-          | '(' expressao ')' {
+          |
+'(' expressao ')' {
                 $$ = $2;
-            }
-          | '-' expressao %prec UMINUS {
+}
+          |
+'-' expressao %prec UMINUS {
                 $$.tipo_val = $2.tipo_val;
                 $$.temp = novo_temp($$.tipo_val);
                 sprintf(buf, "%s = -%s;\n", $$.temp, $2.temp);
                 strcat(instrucoes, buf);
-                char *ce = (char*) malloc(strlen($2.c_expr) + 4);
+                char *ce = (char*) malloc(meu_strlen($2.c_expr) + 4);
                 sprintf(ce, "(-%s)", $2.c_expr);
                 $$.c_expr = ce;
             }

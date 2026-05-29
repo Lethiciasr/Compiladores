@@ -1,8 +1,32 @@
+int opcao;
+opcao = 2;
+int j;
 
-    int idade;
+print("--- Teste de Switch e Break/Continue ---");
 
-    idade = 20;
+switch (opcao) {
+    case 1:
+        print("Escolheu a opcao 1");
+        break;
+        
+    case 2:
+        print("Escolheu a opcao 2. Iniciando laco interno:");
+        
+        for (j = 0; j < 4; j = j + 1) {
+            if (j == 2) {
+                print("Pulando o numero 2 com continue");
+                continue; 
+            }
+            if (j == 3) {
+                print("Parando o laco no 3 com break");
+                break;
+            }
+            print(j);
+        }
+        break; 
+        
+    default:
+        print("Opcao invalida");
+}
 
-    if(idade >= 18) {
-        print("Maior");
-    }
+print("Fim do programa.");
