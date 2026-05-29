@@ -72,10 +72,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "tabela.h"
 
+int houve_erro = 0;
 extern int yylex();
-void yyerror(const char *s) { printf("Erro: %s\n", s); }
+void yyerror(const char *s) {printf("Erro: %s\n", s);
+houve_erro = 1;
+}
 
 char buf[200];
 char c_decl[5000] = "";
@@ -90,7 +94,7 @@ int topo_laco = 0;
 
 int escopo_atual = 0;
 
-#line 94 "sin.tab.c"
+#line 98 "sin.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -580,13 +584,13 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    55,    55,    59,    60,    65,    65,    71,    72,    76,
-      93,   105,   106,   107,   110,   110,   143,   143,   150,   151,
-     152,   153,   154,   171,   199,   205,   205,   230,   239,   230,
-     263,   263,   285,   294,   285,   329,   329,   346,   356,   367,
-     372,   377,   382,   387,   394,   430,   437,   444,   451,   458,
-     465,   480,   507,   534,   561,   590,   605,   620,   635,   650,
-     665,   682,   696,   710,   725,   737,   749,   752
+       0,    61,    61,    65,    66,    69,    69,    75,    76,    80,
+      97,   109,   110,   111,   114,   114,   147,   147,   154,   155,
+     156,   157,   158,   175,   203,   209,   209,   234,   243,   234,
+     267,   267,   289,   298,   289,   333,   333,   350,   360,   371,
+     376,   381,   386,   391,   398,   434,   441,   448,   455,   462,
+     469,   484,   511,   538,   565,   594,   609,   624,   639,   654,
+     669,   686,   700,   714,   729,   741,   753,   756
 };
 #endif
 
@@ -1286,22 +1290,22 @@ yyreduce:
   switch (yyn)
     {
   case 5: /* $@1: %empty  */
-#line 65 "sin.y"
+#line 69 "sin.y"
             { escopo_atual++; }
-#line 1292 "sin.tab.c"
+#line 1296 "sin.tab.c"
     break;
 
   case 6: /* bloco: '{' $@1 comandos_bloco '}'  */
-#line 65 "sin.y"
+#line 69 "sin.y"
                                                    {
             remover_simbolos_do_nivel(escopo_atual);
             escopo_atual--;
         }
-#line 1301 "sin.tab.c"
+#line 1305 "sin.tab.c"
     break;
 
   case 9: /* if_cond: TOKEN_IF '(' expressao ')'  */
-#line 76 "sin.y"
+#line 80 "sin.y"
                                      {
     if ((yyvsp[-1].info).tipo_val != T_BOOL) {
         yyerror("Erro Semantico: A condicao do 'if' deve ser booleana.");
@@ -1316,11 +1320,11 @@ yyreduce:
     
     (yyval.valor_str) = l_false; /* Passa o label pra frente */
 }
-#line 1320 "sin.tab.c"
+#line 1324 "sin.tab.c"
     break;
 
   case 10: /* incremento_for: ID ASSIGN expressao  */
-#line 93 "sin.y"
+#line 97 "sin.y"
                                      {
     Simbolo *s = buscar((yyvsp[-2].valor_str));
     if (!s) {
@@ -1331,11 +1335,11 @@ yyreduce:
         sprintf(inc_c, "%s = %s;\n", s->nome, (yyvsp[0].info).c_expr);
     }
 }
-#line 1335 "sin.tab.c"
+#line 1339 "sin.tab.c"
     break;
 
   case 14: /* @2: %empty  */
-#line 110 "sin.y"
+#line 114 "sin.y"
                                 {
         // 1. Gera rótulo pro próximo case (se este falhar)
         char* l_proximo = novo_label();
@@ -1356,11 +1360,11 @@ yyreduce:
         (yyval.valor_str) = l_proximo; // Salva o l_proximo em $4
         
     }
-#line 1360 "sin.tab.c"
+#line 1364 "sin.tab.c"
     break;
 
   case 15: /* caso: TOKEN_CASE expressao ':' @2 comandos_bloco TOKEN_BREAK ';'  */
-#line 129 "sin.y"
+#line 133 "sin.y"
                                      {
         // 5. Fim do case: pula pro fim do switch (break do 3AC)
         sprintf(buf, "goto %s;\n", switch_fim);
@@ -1373,27 +1377,27 @@ yyreduce:
         // 7. Break do C
         strcat(c_body, "break;\n");
     }
-#line 1377 "sin.tab.c"
+#line 1381 "sin.tab.c"
     break;
 
   case 16: /* $@3: %empty  */
-#line 143 "sin.y"
+#line 147 "sin.y"
                                  {
         strcat(c_body, "default:\n");
     }
-#line 1385 "sin.tab.c"
+#line 1389 "sin.tab.c"
     break;
 
   case 17: /* default_caso: TOKEN_DEFAULT ':' $@3 comandos_bloco  */
-#line 145 "sin.y"
+#line 149 "sin.y"
                      {
         // O default não precisa de break nem de desvios no 3AC, ele só termina.
     }
-#line 1393 "sin.tab.c"
+#line 1397 "sin.tab.c"
     break;
 
   case 22: /* comando: TOKEN_PRINT '(' expressao ')' ';'  */
-#line 154 "sin.y"
+#line 158 "sin.y"
                                             {
             // 1. Gera o Código Intermediário (3AC)
             sprintf(buf, "print %s;\n", (yyvsp[-2].info).temp);
@@ -1410,11 +1414,11 @@ yyreduce:
             sprintf(buf, "printf(\"%s\\n\", %s);\n", formato, (yyvsp[-2].info).c_expr);
             strcat(c_body, buf);
         }
-#line 1414 "sin.tab.c"
+#line 1418 "sin.tab.c"
     break;
 
   case 23: /* comando: TOKEN_READ '(' ID ')' ';'  */
-#line 171 "sin.y"
+#line 175 "sin.y"
                                     {
             Simbolo *s = buscar((yyvsp[-2].valor_str));
             if (!s) {
@@ -1443,22 +1447,22 @@ yyreduce:
                 strcat(c_body, buf);
             }
         }
-#line 1447 "sin.tab.c"
+#line 1451 "sin.tab.c"
     break;
 
   case 24: /* comando: if_cond comando  */
-#line 199 "sin.y"
+#line 203 "sin.y"
                           {
             // IF SIMPLES (Sem else)
             sprintf(buf, "%s:\n", (yyvsp[-1].valor_str)); // Puxa o rótulo do if_cond
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
         }
-#line 1458 "sin.tab.c"
+#line 1462 "sin.tab.c"
     break;
 
   case 25: /* @4: %empty  */
-#line 205 "sin.y"
+#line 209 "sin.y"
                                      {
             // METADE DO ELSE
             char* l_fim = novo_label();
@@ -1478,11 +1482,11 @@ yyreduce:
             (yyval.valor_str) = l_fim; 
             
         }
-#line 1482 "sin.tab.c"
+#line 1486 "sin.tab.c"
     break;
 
   case 26: /* comando: if_cond comando TOKEN_ELSE @4 comando  */
-#line 223 "sin.y"
+#line 227 "sin.y"
                   {
             // FIM DO ELSE
             // Imprime o label de fim (que veio do bloco anterior)
@@ -1490,11 +1494,11 @@ yyreduce:
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
         }
-#line 1494 "sin.tab.c"
+#line 1498 "sin.tab.c"
     break;
 
   case 27: /* @5: %empty  */
-#line 230 "sin.y"
+#line 234 "sin.y"
                       {
             char* l_inicio = novo_label();
             sprintf(buf, "%s:\n", l_inicio);
@@ -1505,11 +1509,11 @@ yyreduce:
             strcpy(pilha_inicio[topo_laco], l_inicio);
             
         }
-#line 1509 "sin.tab.c"
+#line 1513 "sin.tab.c"
     break;
 
   case 28: /* @6: %empty  */
-#line 239 "sin.y"
+#line 243 "sin.y"
                             {
             if ((yyvsp[-1].info).tipo_val != T_BOOL) yyerror("Erro Semantico: Condicao deve ser booleana.");
             
@@ -1525,11 +1529,11 @@ yyreduce:
             topo_laco++; 
             
         }
-#line 1529 "sin.tab.c"
+#line 1533 "sin.tab.c"
     break;
 
   case 29: /* comando: TOKEN_WHILE @5 '(' expressao ')' @6 comando  */
-#line 253 "sin.y"
+#line 257 "sin.y"
                   {
             // --- LINHA NOVA 4: Desce a pilha pois o laço acabou ---
             topo_laco--; 
@@ -1540,11 +1544,11 @@ yyreduce:
             strcat(instrucoes, buf);
             strcat(c_body, "}\n");
         }
-#line 1544 "sin.tab.c"
+#line 1548 "sin.tab.c"
     break;
 
   case 30: /* @7: %empty  */
-#line 263 "sin.y"
+#line 267 "sin.y"
                    {
             char* l_inicio = novo_label();
             sprintf(buf, "%s:\n", l_inicio);
@@ -1552,11 +1556,11 @@ yyreduce:
             (yyval.valor_str) = l_inicio;
             strcat(c_body, "do {\n");
         }
-#line 1556 "sin.tab.c"
+#line 1560 "sin.tab.c"
     break;
 
   case 31: /* comando: TOKEN_DO @7 comando TOKEN_WHILE '(' expressao ')' ';'  */
-#line 269 "sin.y"
+#line 273 "sin.y"
                                                     {
             // Agora a expressao é o $6, porque:
             // 1=TOKEN_DO, 2={...}, 3=comando, 4=WHILE, 5='(', 6=expressao
@@ -1573,11 +1577,11 @@ yyreduce:
             sprintf(buf, "} while (%s);\n", (yyvsp[-2].info).c_expr);
             strcat(c_body, buf);
         }
-#line 1577 "sin.tab.c"
+#line 1581 "sin.tab.c"
     break;
 
   case 32: /* @8: %empty  */
-#line 285 "sin.y"
+#line 289 "sin.y"
                                        {
             // 1. A inicialização já foi impressa pela 'atribuicao'.
             
@@ -1588,11 +1592,11 @@ yyreduce:
             (yyval.valor_str) = l_inicio; // Salva na posição $5
             
         }
-#line 1592 "sin.tab.c"
+#line 1596 "sin.tab.c"
     break;
 
   case 33: /* @9: %empty  */
-#line 294 "sin.y"
+#line 298 "sin.y"
                         {
             // 3. Verifica a CONDIÇÃO
             if ((yyvsp[-1].info).tipo_val != T_BOOL) {
@@ -1608,11 +1612,11 @@ yyreduce:
             strcat(c_body, buf);
             
         }
-#line 1612 "sin.tab.c"
+#line 1616 "sin.tab.c"
     break;
 
   case 34: /* comando: TOKEN_FOR '(' atribuicao ';' @8 expressao ';' @9 incremento_for ')' comando  */
-#line 308 "sin.y"
+#line 312 "sin.y"
                                      {
             // 4. Chegamos no final do laço!
             
@@ -1634,11 +1638,11 @@ yyreduce:
             // Fecha a chave no C
             strcat(c_body, "}\n");
         }
-#line 1638 "sin.tab.c"
+#line 1642 "sin.tab.c"
     break;
 
   case 35: /* $@10: %empty  */
-#line 329 "sin.y"
+#line 333 "sin.y"
                                          {
             // 1. Salva a variável avaliada e gera o rótulo de saída
             strcpy(switch_exp, (yyvsp[-1].info).temp);
@@ -1649,11 +1653,11 @@ yyreduce:
             strcat(c_body, buf);
             
         }
-#line 1653 "sin.tab.c"
+#line 1657 "sin.tab.c"
     break;
 
   case 36: /* comando: TOKEN_SWITCH '(' expressao ')' $@10 '{' casos_lista '}'  */
-#line 338 "sin.y"
+#line 342 "sin.y"
                               {
             // 3. Fim do Switch: imprime o rótulo de saída
             sprintf(buf, "%s:\n", switch_fim);
@@ -1661,11 +1665,11 @@ yyreduce:
             
             strcat(c_body, "}\n");
         }
-#line 1665 "sin.tab.c"
+#line 1669 "sin.tab.c"
     break;
 
   case 37: /* comando: TOKEN_BREAK ';'  */
-#line 346 "sin.y"
+#line 350 "sin.y"
                           {
             if (topo_laco == 0) {
                 yyerror("Erro Semantico: 'break' usado fora de um laco de repeticao.");
@@ -1676,11 +1680,11 @@ yyreduce:
                 strcat(c_body, "break;\n");
             }
         }
-#line 1680 "sin.tab.c"
+#line 1684 "sin.tab.c"
     break;
 
   case 38: /* comando: TOKEN_CONTINUE ';'  */
-#line 356 "sin.y"
+#line 360 "sin.y"
                              {
             if (topo_laco == 0) {
                 yyerror("Erro Semantico: 'continue' usado fora de um laco de repeticao.");
@@ -1691,61 +1695,61 @@ yyreduce:
                 strcat(c_body, "continue;\n");
             }
         }
-#line 1695 "sin.tab.c"
+#line 1699 "sin.tab.c"
     break;
 
   case 39: /* declaracao: TOKEN_INT ID  */
-#line 367 "sin.y"
+#line 371 "sin.y"
                             {
                 inserir((yyvsp[0].valor_str), T_INT, escopo_atual);
                 sprintf(buf, "int %s;\n", (yyvsp[0].valor_str));
                 strcat(c_decl, buf);
              }
-#line 1705 "sin.tab.c"
+#line 1709 "sin.tab.c"
     break;
 
   case 40: /* declaracao: TOKEN_FLOAT ID  */
-#line 372 "sin.y"
+#line 376 "sin.y"
                             {
                 inserir((yyvsp[0].valor_str), T_FLOAT, escopo_atual);
                 sprintf(buf, "float %s;\n", (yyvsp[0].valor_str));
                 strcat(c_decl, buf);
              }
-#line 1715 "sin.tab.c"
+#line 1719 "sin.tab.c"
     break;
 
   case 41: /* declaracao: TOKEN_CHAR ID  */
-#line 377 "sin.y"
+#line 381 "sin.y"
                             {
                 inserir((yyvsp[0].valor_str), T_CHAR, escopo_atual);
                 sprintf(buf, "char %s;\n", (yyvsp[0].valor_str));
                 strcat(c_decl, buf);
              }
-#line 1725 "sin.tab.c"
+#line 1729 "sin.tab.c"
     break;
 
   case 42: /* declaracao: TOKEN_BOOL ID  */
-#line 382 "sin.y"
-                            {
-                inserir((yyvsp[0].valor_str), T_BOOL, escopo_atual);
-                sprintf(buf, "int %s;\n", (yyvsp[0].valor_str));
-                strcat(c_decl, buf);
+#line 386 "sin.y"
+                           {
+                 inserir((yyvsp[0].valor_str), T_BOOL, escopo_atual);
+                 sprintf(buf, "bool %s;\n", (yyvsp[0].valor_str));
+                 strcat(c_decl, buf);
              }
-#line 1735 "sin.tab.c"
+#line 1739 "sin.tab.c"
     break;
 
   case 43: /* declaracao: TOKEN_STRING ID  */
-#line 387 "sin.y"
+#line 391 "sin.y"
                               {
                 inserir((yyvsp[0].valor_str), T_STRING, escopo_atual);
                 sprintf(buf, "char* %s;\n", (yyvsp[0].valor_str));
                 strcat(c_decl, buf);
              }
-#line 1745 "sin.tab.c"
+#line 1749 "sin.tab.c"
     break;
 
   case 44: /* atribuicao: ID ASSIGN expressao  */
-#line 394 "sin.y"
+#line 398 "sin.y"
                                  {
     Simbolo *s = buscar((yyvsp[-2].valor_str));
     if (!s) {
@@ -1781,11 +1785,11 @@ yyreduce:
         }
     }
 }
-#line 1785 "sin.tab.c"
+#line 1789 "sin.tab.c"
     break;
 
   case 45: /* expressao: NUM_INT  */
-#line 430 "sin.y"
+#line 434 "sin.y"
                     {
                 (yyval.info).tipo_val = T_INT;
                 (yyval.info).temp   = novo_temp(T_INT);
@@ -1793,11 +1797,11 @@ yyreduce:
                 sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1797 "sin.tab.c"
+#line 1801 "sin.tab.c"
     break;
 
   case 46: /* expressao: NUM_FLOAT  */
-#line 437 "sin.y"
+#line 441 "sin.y"
                       {
                 (yyval.info).tipo_val = T_FLOAT;
                 (yyval.info).temp   = novo_temp(T_FLOAT);
@@ -1805,11 +1809,11 @@ yyreduce:
                 sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1809 "sin.tab.c"
+#line 1813 "sin.tab.c"
     break;
 
   case 47: /* expressao: CHAR_LIT  */
-#line 444 "sin.y"
+#line 448 "sin.y"
                      {
                 (yyval.info).tipo_val = T_CHAR;
                 (yyval.info).temp   = novo_temp(T_CHAR);
@@ -1817,11 +1821,11 @@ yyreduce:
                 sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1821 "sin.tab.c"
+#line 1825 "sin.tab.c"
     break;
 
   case 48: /* expressao: BOOL_LIT  */
-#line 451 "sin.y"
+#line 455 "sin.y"
                      {
                 (yyval.info).tipo_val = T_BOOL;
                 (yyval.info).temp   = novo_temp(T_BOOL);
@@ -1829,11 +1833,11 @@ yyreduce:
                 sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1833 "sin.tab.c"
+#line 1837 "sin.tab.c"
     break;
 
   case 49: /* expressao: STRING_LIT  */
-#line 458 "sin.y"
+#line 462 "sin.y"
                          {
                 (yyval.info).tipo_val = T_STRING;
                 (yyval.info).temp   = novo_temp(T_STRING);
@@ -1841,11 +1845,11 @@ yyreduce:
                 sprintf(buf, "%s = %s;\n", (yyval.info).temp, (yyvsp[0].valor_str));
                 strcat(instrucoes, buf);
             }
-#line 1845 "sin.tab.c"
+#line 1849 "sin.tab.c"
     break;
 
   case 50: /* expressao: ID  */
-#line 465 "sin.y"
+#line 469 "sin.y"
                {
                 Simbolo *s = buscar((yyvsp[0].valor_str));
                 if (s) {
@@ -1859,11 +1863,11 @@ yyreduce:
                     (yyval.info).tipo_val = T_INT;
                 }
             }
-#line 1863 "sin.tab.c"
+#line 1867 "sin.tab.c"
     break;
 
   case 51: /* expressao: expressao PLUS expressao  */
-#line 480 "sin.y"
+#line 484 "sin.y"
                                      {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -1891,11 +1895,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 1895 "sin.tab.c"
+#line 1899 "sin.tab.c"
     break;
 
   case 52: /* expressao: expressao '-' expressao  */
-#line 507 "sin.y"
+#line 511 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -1923,11 +1927,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 1927 "sin.tab.c"
+#line 1931 "sin.tab.c"
     break;
 
   case 53: /* expressao: expressao '*' expressao  */
-#line 534 "sin.y"
+#line 538 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -1955,11 +1959,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 1959 "sin.tab.c"
+#line 1963 "sin.tab.c"
     break;
 
   case 54: /* expressao: expressao '/' expressao  */
-#line 561 "sin.y"
+#line 565 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -1987,11 +1991,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 1991 "sin.tab.c"
+#line 1995 "sin.tab.c"
     break;
 
   case 55: /* expressao: expressao EQ expressao  */
-#line 590 "sin.y"
+#line 594 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val == T_BOOL && (yyvsp[0].info).tipo_val != T_BOOL) ||
                     ((yyvsp[-2].info).tipo_val != T_BOOL && (yyvsp[0].info).tipo_val == T_BOOL)) {
@@ -2007,11 +2011,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2011 "sin.tab.c"
+#line 2015 "sin.tab.c"
     break;
 
   case 56: /* expressao: expressao NE expressao  */
-#line 605 "sin.y"
+#line 609 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val == T_BOOL && (yyvsp[0].info).tipo_val != T_BOOL) ||
                     ((yyvsp[-2].info).tipo_val != T_BOOL && (yyvsp[0].info).tipo_val == T_BOOL)) {
@@ -2027,11 +2031,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2031 "sin.tab.c"
+#line 2035 "sin.tab.c"
     break;
 
   case 57: /* expressao: expressao '>' expressao  */
-#line 620 "sin.y"
+#line 624 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2047,11 +2051,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2051 "sin.tab.c"
+#line 2055 "sin.tab.c"
     break;
 
   case 58: /* expressao: expressao '<' expressao  */
-#line 635 "sin.y"
+#line 639 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2067,11 +2071,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2071 "sin.tab.c"
+#line 2075 "sin.tab.c"
     break;
 
   case 59: /* expressao: expressao GE expressao  */
-#line 650 "sin.y"
+#line 654 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2087,11 +2091,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2091 "sin.tab.c"
+#line 2095 "sin.tab.c"
     break;
 
   case 60: /* expressao: expressao LE expressao  */
-#line 665 "sin.y"
+#line 669 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2107,11 +2111,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2111 "sin.tab.c"
+#line 2115 "sin.tab.c"
     break;
 
   case 61: /* expressao: expressao AND expressao  */
-#line 682 "sin.y"
+#line 686 "sin.y"
                                     {
                 if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador AND requer operandos booleanos.");
@@ -2126,11 +2130,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2130 "sin.tab.c"
+#line 2134 "sin.tab.c"
     break;
 
   case 62: /* expressao: expressao OR expressao  */
-#line 696 "sin.y"
+#line 700 "sin.y"
                                    {
                 if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador OR requer operandos booleanos.");
@@ -2145,11 +2149,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2149 "sin.tab.c"
+#line 2153 "sin.tab.c"
     break;
 
   case 63: /* expressao: NOT expressao  */
-#line 710 "sin.y"
+#line 714 "sin.y"
                           {
                 if ((yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador NOT requer operando booleano.");
@@ -2164,11 +2168,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2168 "sin.tab.c"
+#line 2172 "sin.tab.c"
     break;
 
   case 64: /* expressao: '(' TOKEN_INT ')' expressao  */
-#line 725 "sin.y"
+#line 729 "sin.y"
                                                    {
                 char* temp_copia = novo_temp((yyvsp[0].info).tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, (yyvsp[0].info).temp);
@@ -2181,11 +2185,11 @@ yyreduce:
                 sprintf(ce, "(int)(%s)", (yyvsp[0].info).c_expr);
                 (yyval.info).c_expr = ce;
             }
-#line 2185 "sin.tab.c"
+#line 2189 "sin.tab.c"
     break;
 
   case 65: /* expressao: '(' TOKEN_FLOAT ')' expressao  */
-#line 737 "sin.y"
+#line 741 "sin.y"
                                                      {
                 char* temp_copia = novo_temp((yyvsp[0].info).tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, (yyvsp[0].info).temp);
@@ -2198,19 +2202,19 @@ yyreduce:
                 sprintf(ce, "(float)(%s)", (yyvsp[0].info).c_expr);
                 (yyval.info).c_expr = ce;
             }
-#line 2202 "sin.tab.c"
+#line 2206 "sin.tab.c"
     break;
 
   case 66: /* expressao: '(' expressao ')'  */
-#line 749 "sin.y"
+#line 753 "sin.y"
                               {
                 (yyval.info) = (yyvsp[-1].info);
             }
-#line 2210 "sin.tab.c"
+#line 2214 "sin.tab.c"
     break;
 
   case 67: /* expressao: '-' expressao  */
-#line 752 "sin.y"
+#line 756 "sin.y"
                                        {
                 (yyval.info).tipo_val = (yyvsp[0].info).tipo_val;
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val);
@@ -2220,11 +2224,11 @@ yyreduce:
                 sprintf(ce, "(-%s)", (yyvsp[0].info).c_expr);
                 (yyval.info).c_expr = ce;
             }
-#line 2224 "sin.tab.c"
+#line 2228 "sin.tab.c"
     break;
 
 
-#line 2228 "sin.tab.c"
+#line 2232 "sin.tab.c"
 
       default: break;
     }
@@ -2417,11 +2421,15 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 763 "sin.y"
+#line 767 "sin.y"
 
 
 int main() {
     yyparse();
+
+    if (houve_erro) {
+        return 1;
+    }
 
     /* Codigo Intermediario */
     printf("=== Codigo Intermediario ===\n");
@@ -2429,7 +2437,9 @@ int main() {
 
     /* Codigo C */
     printf("=== Codigo C ===\n");
-    printf("#include <stdio.h>\n\nint main() {\n");
+    printf("#include <stdio.h>\n");
+    printf("#include <stdbool.h>\n\n");
+    printf("int main() {\n");
 
     char tmp1[5000], tmp2[5000];
 

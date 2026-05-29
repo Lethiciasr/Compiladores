@@ -31,7 +31,7 @@ char* novo_temp(Tipo tipo) {
         case T_INT:   sprintf(linha, "int %s;\n", t); break;
         case T_FLOAT: sprintf(linha, "float %s;\n", t); break;
         case T_CHAR:  sprintf(linha, "char %s;\n", t); break;
-        case T_BOOL:  sprintf(linha, "int %s; //mapeamento bool_int\n", t); break;
+        case T_BOOL:  sprintf(linha, "bool %s;\n", t); break;
         case T_STRING: sprintf(linha, "char* %s;\n", t); break;
     }
     strcat(declaracoes, linha); 

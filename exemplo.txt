@@ -1,11 +1,10 @@
 main() {
 
-    int x;
+    bool ativo;
+    int idade;
 
-    x = 0;
+    ativo = true;
 
-    while (x < 5) {
-        x = x + 1;
-    }
+    idade = ativo;
 
 }

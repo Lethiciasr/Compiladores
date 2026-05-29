@@ -2,10 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "tabela.h"
 
+int houve_erro = 0;
 extern int yylex();
-void yyerror(const char *s) { printf("Erro: %s\n", s); }
+void yyerror(const char *s) {printf("Erro: %s\n", s);
+houve_erro = 1;
+}
 
 char buf[200];
 char c_decl[5000] = "";
@@ -49,6 +53,8 @@ int escopo_atual = 0;
 %right UMINUS
 
 %type <info> expressao
+%type <valor_str> if_cond
+%type <valor_str> incremento_for
 
 %%
 
@@ -59,8 +65,6 @@ declaracoes_globais
     : declaracao ';' declaracoes_globais
     |
     ;
-
-comandos : comando comandos | ;
 
 bloco : '{' { escopo_atual++; } comandos_bloco '}' {
             remover_simbolos_do_nivel(escopo_atual);
@@ -150,7 +154,7 @@ default_caso : TOKEN_DEFAULT ':' {
 comando : declaracao ';'
         | atribuicao ';'
         | expressao ';' 
-        | bloco ;
+        | bloco 
         | TOKEN_PRINT '(' expressao ')' ';' {
             // 1. Gera o Código Intermediário (3AC)
             sprintf(buf, "print %s;\n", $3.temp);
@@ -379,10 +383,10 @@ declaracao : TOKEN_INT   ID {
                 sprintf(buf, "char %s;\n", $2);
                 strcat(c_decl, buf);
              }
-           | TOKEN_BOOL  ID {
-                inserir($2, T_BOOL, escopo_atual);
-                sprintf(buf, "int %s;\n", $2);
-                strcat(c_decl, buf);
+           | TOKEN_BOOL ID {
+                 inserir($2, T_BOOL, escopo_atual);
+                 sprintf(buf, "bool %s;\n", $2);
+                 strcat(c_decl, buf);
              }
             | TOKEN_STRING ID {
                 inserir($2, T_STRING, escopo_atual);
@@ -765,13 +769,19 @@ expressao : NUM_INT {
 int main() {
     yyparse();
 
+    if (houve_erro) {
+        return 1;
+    }
+
     /* Codigo Intermediario */
     printf("=== Codigo Intermediario ===\n");
     printf("%s\n%s\n", declaracoes, instrucoes);
 
     /* Codigo C */
     printf("=== Codigo C ===\n");
-    printf("#include <stdio.h>\n\nint main() {\n");
+    printf("#include <stdio.h>\n");
+    printf("#include <stdbool.h>\n\n");
+    printf("int main() {\n");
 
     char tmp1[5000], tmp2[5000];
 
