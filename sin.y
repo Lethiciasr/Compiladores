@@ -488,36 +488,46 @@ expressao : NUM_INT {
 
           /* --- ARITMÉTICA --- */
           | expressao PLUS expressao {
-                if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
-                    ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
-                    yyerror("Erro Semantico: Operacao de soma com tipos invalidos.");
-                    $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_INT;
-                } else {
-                    char *ce1 = $1.c_expr, *ce3 = $3.c_expr;
-                   if ($1.tipo_val == T_INT) {
-                        $1.temp = gerar_cast($1.temp, T_FLOAT);
-                        $1.tipo_val = T_FLOAT;
-
-                        char *tmp = (char*) malloc(256);
-                        sprintf(tmp, "(float)(%s)", ce1);
-                        ce1 = tmp;
+                    if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||
+                        ($3.tipo_val != T_INT && $3.tipo_val != T_FLOAT)) {
+                        yyerror("Erro Semantico: Operacao de soma com tipos invalidos.");
+                        $$.temp = "ERRO"; $$.c_expr = strdup("ERRO"); $$.tipo_val = T_INT;
                     } else {
-                        $3.temp = gerar_cast($3.temp, T_FLOAT);
-                        $3.tipo_val = T_FLOAT;
+                        char *ce1 = $1.c_expr;
+                        char *ce3 = $3.c_expr;
+                        
+                        // 1. Determina o tipo resultante
+                        if ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) {
+                            $$.tipo_val = T_FLOAT;
+                        } else {
+                            $$.tipo_val = T_INT;
+                        }
 
-                        char *tmp = (char*) malloc(256);
-                        sprintf(tmp, "(float)(%s)", ce3);
-                        ce3 = tmp;
-                    }
-                    }
-                   $$.tipo_val = ($1.tipo_val == T_FLOAT || $3.tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                    $$.temp = novo_temp($$.tipo_val);
-                    sprintf(buf, "%s = %s + %s;\n", $$.temp, $1.temp, $3.temp);
-                    strcat(instrucoes, buf);
+                        // 2. Aplica cast se necessário para o código C
+                        if ($$.tipo_val == T_FLOAT) {
+                            if ($1.tipo_val == T_INT) {
+                                $1.temp = gerar_cast($1.temp, T_FLOAT);
+                                char *tmp = (char*) malloc(256);
+                                sprintf(tmp, "(float)(%s)", ce1);
+                                ce1 = tmp;
+                            }
+                            if ($3.tipo_val == T_INT) {
+                                $3.temp = gerar_cast($3.temp, T_FLOAT);
+                                char *tmp = (char*) malloc(256);
+                                sprintf(tmp, "(float)(%s)", ce3);
+                                ce3 = tmp;
+                            }
+                        }
 
-                    char *ce = (char*) malloc(256);
-                    sprintf(ce, "(%s + %s)", $1.c_expr, $3.c_expr);
-                    $$.c_expr = ce;
+                        // 3. Gera UMA ÚNICA vez o código
+                        $$.temp = novo_temp($$.tipo_val);
+                        sprintf(buf, "%s = %s + %s;\n", $$.temp, $1.temp, $3.temp);
+                        strcat(instrucoes, buf);
+
+                        char *ce = (char*) malloc(256);
+                        sprintf(ce, "(%s + %s)", ce1, ce3);
+                        $$.c_expr = ce;
+                    }
                 }
           | expressao '-' expressao {
                 if (($1.tipo_val != T_INT && $1.tipo_val != T_FLOAT) ||

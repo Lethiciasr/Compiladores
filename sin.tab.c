@@ -589,8 +589,8 @@ static const yytype_int16 yyrline[] =
      156,   157,   158,   175,   203,   209,   209,   234,   243,   234,
      267,   267,   289,   298,   289,   333,   333,   350,   360,   371,
      376,   381,   386,   391,   398,   440,   447,   454,   461,   468,
-     475,   490,   522,   550,   582,   616,   631,   646,   661,   676,
-     691,   708,   722,   736,   751,   770,   789,   792
+     475,   490,   532,   560,   592,   626,   641,   656,   671,   686,
+     701,   718,   732,   746,   761,   780,   799,   802
 };
 #endif
 
@@ -1875,42 +1875,52 @@ yyreduce:
   case 51: /* expressao: expressao PLUS expressao  */
 #line 490 "sin.y"
                                      {
-                if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
-                    ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
-                    yyerror("Erro Semantico: Operacao de soma com tipos invalidos.");
-                    (yyval.info).temp = "ERRO"; (yyval.info).c_expr = strdup("ERRO"); (yyval.info).tipo_val = T_INT;
-                } else {
-                    char *ce1 = (yyvsp[-2].info).c_expr, *ce3 = (yyvsp[0].info).c_expr;
-                   if ((yyvsp[-2].info).tipo_val == T_INT) {
-                        (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT);
-                        (yyvsp[-2].info).tipo_val = T_FLOAT;
-
-                        char *tmp = (char*) malloc(256);
-                        sprintf(tmp, "(float)(%s)", ce1);
-                        ce1 = tmp;
+                    if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
+                        ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
+                        yyerror("Erro Semantico: Operacao de soma com tipos invalidos.");
+                        (yyval.info).temp = "ERRO"; (yyval.info).c_expr = strdup("ERRO"); (yyval.info).tipo_val = T_INT;
                     } else {
-                        (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT);
-                        (yyvsp[0].info).tipo_val = T_FLOAT;
+                        char *ce1 = (yyvsp[-2].info).c_expr;
+                        char *ce3 = (yyvsp[0].info).c_expr;
+                        
+                        // 1. Determina o tipo resultante
+                        if ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) {
+                            (yyval.info).tipo_val = T_FLOAT;
+                        } else {
+                            (yyval.info).tipo_val = T_INT;
+                        }
 
-                        char *tmp = (char*) malloc(256);
-                        sprintf(tmp, "(float)(%s)", ce3);
-                        ce3 = tmp;
-                    }
-                    }
-                   (yyval.info).tipo_val = ((yyvsp[-2].info).tipo_val == T_FLOAT || (yyvsp[0].info).tipo_val == T_FLOAT) ? T_FLOAT : T_INT;
-                    (yyval.info).temp = novo_temp((yyval.info).tipo_val);
-                    sprintf(buf, "%s = %s + %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
-                    strcat(instrucoes, buf);
+                        // 2. Aplica cast se necessário para o código C
+                        if ((yyval.info).tipo_val == T_FLOAT) {
+                            if ((yyvsp[-2].info).tipo_val == T_INT) {
+                                (yyvsp[-2].info).temp = gerar_cast((yyvsp[-2].info).temp, T_FLOAT);
+                                char *tmp = (char*) malloc(256);
+                                sprintf(tmp, "(float)(%s)", ce1);
+                                ce1 = tmp;
+                            }
+                            if ((yyvsp[0].info).tipo_val == T_INT) {
+                                (yyvsp[0].info).temp = gerar_cast((yyvsp[0].info).temp, T_FLOAT);
+                                char *tmp = (char*) malloc(256);
+                                sprintf(tmp, "(float)(%s)", ce3);
+                                ce3 = tmp;
+                            }
+                        }
 
-                    char *ce = (char*) malloc(256);
-                    sprintf(ce, "(%s + %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
-                    (yyval.info).c_expr = ce;
+                        // 3. Gera UMA ÚNICA vez o código
+                        (yyval.info).temp = novo_temp((yyval.info).tipo_val);
+                        sprintf(buf, "%s = %s + %s;\n", (yyval.info).temp, (yyvsp[-2].info).temp, (yyvsp[0].info).temp);
+                        strcat(instrucoes, buf);
+
+                        char *ce = (char*) malloc(256);
+                        sprintf(ce, "(%s + %s)", ce1, ce3);
+                        (yyval.info).c_expr = ce;
+                    }
                 }
-#line 1910 "sin.tab.c"
+#line 1920 "sin.tab.c"
     break;
 
   case 52: /* expressao: expressao '-' expressao  */
-#line 522 "sin.y"
+#line 532 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -1939,11 +1949,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 1943 "sin.tab.c"
+#line 1953 "sin.tab.c"
     break;
 
   case 53: /* expressao: expressao '*' expressao  */
-#line 550 "sin.y"
+#line 560 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -1976,11 +1986,11 @@ yyreduce:
                     sprintf(ce, "(%s + %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
                     (yyval.info).c_expr = ce;
                 }
-#line 1980 "sin.tab.c"
+#line 1990 "sin.tab.c"
     break;
 
   case 54: /* expressao: expressao '/' expressao  */
-#line 582 "sin.y"
+#line 592 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2013,11 +2023,11 @@ yyreduce:
                     sprintf(ce, "(%s + %s)", (yyvsp[-2].info).c_expr, (yyvsp[0].info).c_expr);
                     (yyval.info).c_expr = ce;
                 }
-#line 2017 "sin.tab.c"
+#line 2027 "sin.tab.c"
     break;
 
   case 55: /* expressao: expressao EQ expressao  */
-#line 616 "sin.y"
+#line 626 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val == T_BOOL && (yyvsp[0].info).tipo_val != T_BOOL) ||
                     ((yyvsp[-2].info).tipo_val != T_BOOL && (yyvsp[0].info).tipo_val == T_BOOL)) {
@@ -2033,11 +2043,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2037 "sin.tab.c"
+#line 2047 "sin.tab.c"
     break;
 
   case 56: /* expressao: expressao NE expressao  */
-#line 631 "sin.y"
+#line 641 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val == T_BOOL && (yyvsp[0].info).tipo_val != T_BOOL) ||
                     ((yyvsp[-2].info).tipo_val != T_BOOL && (yyvsp[0].info).tipo_val == T_BOOL)) {
@@ -2053,11 +2063,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2057 "sin.tab.c"
+#line 2067 "sin.tab.c"
     break;
 
   case 57: /* expressao: expressao '>' expressao  */
-#line 646 "sin.y"
+#line 656 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2073,11 +2083,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2077 "sin.tab.c"
+#line 2087 "sin.tab.c"
     break;
 
   case 58: /* expressao: expressao '<' expressao  */
-#line 661 "sin.y"
+#line 671 "sin.y"
                                     {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2093,11 +2103,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2097 "sin.tab.c"
+#line 2107 "sin.tab.c"
     break;
 
   case 59: /* expressao: expressao GE expressao  */
-#line 676 "sin.y"
+#line 686 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2113,11 +2123,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2117 "sin.tab.c"
+#line 2127 "sin.tab.c"
     break;
 
   case 60: /* expressao: expressao LE expressao  */
-#line 691 "sin.y"
+#line 701 "sin.y"
                                    {
                 if (((yyvsp[-2].info).tipo_val != T_INT && (yyvsp[-2].info).tipo_val != T_FLOAT) ||
                     ((yyvsp[0].info).tipo_val != T_INT && (yyvsp[0].info).tipo_val != T_FLOAT)) {
@@ -2133,11 +2143,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2137 "sin.tab.c"
+#line 2147 "sin.tab.c"
     break;
 
   case 61: /* expressao: expressao AND expressao  */
-#line 708 "sin.y"
+#line 718 "sin.y"
                                     {
                 if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador AND requer operandos booleanos.");
@@ -2152,11 +2162,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2156 "sin.tab.c"
+#line 2166 "sin.tab.c"
     break;
 
   case 62: /* expressao: expressao OR expressao  */
-#line 722 "sin.y"
+#line 732 "sin.y"
                                    {
                 if ((yyvsp[-2].info).tipo_val != T_BOOL || (yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador OR requer operandos booleanos.");
@@ -2171,11 +2181,11 @@ yyreduce:
                     (yyval.info).c_expr = ce;
                 }
             }
-#line 2175 "sin.tab.c"
+#line 2185 "sin.tab.c"
     break;
 
   case 63: /* expressao: NOT expressao  */
-#line 736 "sin.y"
+#line 746 "sin.y"
                           {
                 if ((yyvsp[0].info).tipo_val != T_BOOL) {
                     yyerror("Erro Semantico: Operador NOT requer operando booleano.");
@@ -2190,11 +2200,11 @@ yyreduce:
                      (yyval.info).c_expr = ce;
                 }
             }
-#line 2194 "sin.tab.c"
+#line 2204 "sin.tab.c"
     break;
 
   case 64: /* expressao: '(' TOKEN_INT ')' expressao  */
-#line 751 "sin.y"
+#line 761 "sin.y"
                                                                      {
                         char* temp_copia = novo_temp((yyvsp[0].info).tipo_val);
                         sprintf(buf, "%s = %s;\n", temp_copia, (yyvsp[0].info).temp);
@@ -2214,11 +2224,11 @@ yyreduce:
 
                         (yyval.info).c_expr = ce;
                     }
-#line 2218 "sin.tab.c"
+#line 2228 "sin.tab.c"
     break;
 
   case 65: /* expressao: '(' TOKEN_FLOAT ')' expressao  */
-#line 770 "sin.y"
+#line 780 "sin.y"
                                                                {
                 char* temp_copia = novo_temp((yyvsp[0].info).tipo_val);
                 sprintf(buf, "%s = %s;\n", temp_copia, (yyvsp[0].info).temp);
@@ -2238,19 +2248,19 @@ yyreduce:
 
                 (yyval.info).c_expr = ce;
             }
-#line 2242 "sin.tab.c"
+#line 2252 "sin.tab.c"
     break;
 
   case 66: /* expressao: '(' expressao ')'  */
-#line 789 "sin.y"
+#line 799 "sin.y"
                               {
                 (yyval.info) = (yyvsp[-1].info);
             }
-#line 2250 "sin.tab.c"
+#line 2260 "sin.tab.c"
     break;
 
   case 67: /* expressao: '-' expressao  */
-#line 792 "sin.y"
+#line 802 "sin.y"
                                                  {
                 (yyval.info).tipo_val = (yyvsp[0].info).tipo_val;
                 (yyval.info).temp = novo_temp((yyval.info).tipo_val);
@@ -2265,11 +2275,11 @@ yyreduce:
 
                 (yyval.info).c_expr = ce;
             }
-#line 2269 "sin.tab.c"
+#line 2279 "sin.tab.c"
     break;
 
 
-#line 2273 "sin.tab.c"
+#line 2283 "sin.tab.c"
 
       default: break;
     }
@@ -2462,7 +2472,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 808 "sin.y"
+#line 818 "sin.y"
 
 
 int main() {
