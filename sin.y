@@ -817,6 +817,8 @@ expressao : NUM_INT {
 
 %%
 
+#include <stdlib.h> // Necessário para a função system()
+
 int main() {
     yyparse();
 
@@ -824,28 +826,67 @@ int main() {
         return 1;
     }
 
-    /* Codigo Intermediario */
+    /* 1. VISUALIZAÇÃO DO CÓDIGO INTERMEDIÁRIO (Apenas Terminal) */
     printf("=== Codigo Intermediario ===\n");
     printf("%s\n%s\n", declaracoes, instrucoes);
+    printf("============================\n\n");
 
-    /* Codigo C */
+
+    /* 2. VISUALIZAÇÃO E GERAÇÃO DO CÓDIGO C (Terminal + Arquivo) */
+    FILE *arquivo_c = fopen("saida.c", "w");
+    if (!arquivo_c) {
+        printf("Erro: Nao foi possivel criar o arquivo saida.c\n");
+        return 1;
+    }
+
+    // Imprime o cabeçalho na tela e no arquivo
     printf("=== Codigo C ===\n");
     printf("#include <stdio.h>\n");
     printf("#include <stdbool.h>\n\n");
     printf("int main() {\n");
 
+    fprintf(arquivo_c, "#include <stdio.h>\n");
+    fprintf(arquivo_c, "#include <stdbool.h>\n\n");
+    fprintf(arquivo_c, "int main() {\n");
+
     char tmp1[5000], tmp2[5000];
 
+    // Imprime as declarações na tela e no arquivo
     strcpy(tmp1, c_decl);
-    for (char *l = strtok(tmp1, "\n"); l; l = strtok(NULL, "\n"))
+    for (char *l = strtok(tmp1, "\n"); l; l = strtok(NULL, "\n")) {
         printf("    %s\n", l);
+        fprintf(arquivo_c, "    %s\n", l);
+    }
 
     printf("\n");
+    fprintf(arquivo_c, "\n");
 
+    // Imprime o corpo do código na tela e no arquivo
     strcpy(tmp2, c_body);
-    for (char *l = strtok(tmp2, "\n"); l; l = strtok(NULL, "\n"))
+    for (char *l = strtok(tmp2, "\n"); l; l = strtok(NULL, "\n")) {
         printf("    %s\n", l);
+        fprintf(arquivo_c, "    %s\n", l);
+    }
 
-    printf("    return 0;\n}\n");
+    // Fecha o int main() na tela e no arquivo
+    printf("    return 0;\n}\n\n");
+    fprintf(arquivo_c, "    return 0;\n}\n");
+    
+    // IMPORTANTE: Fechar o arquivo antes de o GCC tentar acessá-lo!
+    fclose(arquivo_c);
+
+
+    /* 3. AUTOMAÇÃO: CHAMADA DO COMPILADOR GCC */
+    printf("-> Arquivo 'saida.c' gerado com sucesso no disco!\n");
+    printf("-> Compilando para executavel...\n");
+    
+    int status = system("gcc saida.c -o programa.exe");
+
+    if (status == 0) {
+        printf("-> SUCESSO! Executavel 'programa.exe' criado. Pode testar!\n");
+    } else {
+        printf("-> ERRO: O GCC falhou ao compilar o arquivo saida.c.\n");
+    }
+
     return 0;
 }

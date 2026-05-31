@@ -11,13 +11,17 @@ LEX_OUT = lex.yy.c
 YACC_OUT = sin.tab.c
 YACC_HDR = sin.tab.h
 
+# Arquivos do compilador C que o seu compilador gera
+SAIDA_C = saida.c
+PROG_EXE = programa.exe
+
 # Compilador e flags
 CC = gcc
 LEX = flex
 YACC = bison
 CFLAGS = -Wall
 
-# Regra principal (executada ao digitar 'make')
+# Regra principal
 all: $(TARGET)
 
 # Linkagem final
@@ -32,10 +36,10 @@ $(YACC_OUT) $(YACC_HDR): $(YACC_FILE)
 $(LEX_OUT): $(LEX_FILE) $(YACC_HDR)
 	$(LEX) $(LEX_FILE)
 
-# Limpeza de arquivos temporários
+# Limpeza de todos os arquivos gerados (incluindo os da execução)
 clean:
-	rm -f $(TARGET) $(LEX_OUT) $(YACC_OUT) $(YACC_HDR)
+	rm -f $(TARGET) $(LEX_OUT) $(YACC_OUT) $(YACC_HDR) $(SAIDA_C) $(PROG_EXE)
 
-# Executar com arquivo de teste
+# Executar com arquivo de teste (já limpa os arquivos anteriores antes de rodar)
 run: all
 	./$(TARGET) < exemplo.txt
